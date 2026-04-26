@@ -1,15 +1,15 @@
-# Katalog produktow
+# Katalog produktów
 
-Prosta darmowa aplikacja PWA na Androida i iPhone'a. Wersja publiczna pokazuje jeden wspolny katalog dla wszystkich uzytkownikow.
+Prosta darmowa aplikacja PWA na Androida i iPhone'a. Wersja publiczna pokazuje jeden wspólny katalog dla wszystkich użytkowników.
 
-## Jak edytowac produkty
+## Jak edytować produkty
 
-Wejdz w `admin.html`, dodaj lub edytuj produkty, ustaw kolejnosc przyciskami gora/dol, a potem kliknij `Pobierz products.json`.
-Pobrany plik podmien w folderze aplikacji i wrzuc folder ponownie na Netlify.
+Wejdź w `admin.html`, dodaj lub edytuj produkty, ustaw kolejność przyciskami góra/dół, a potem kliknij `Pobierz products.json`.
+Pobrany plik podmień w folderze aplikacji i opublikuj zmiany.
 
-Produkty sa w pliku `products.json`. Mozesz dodac maksymalnie 30 pozycji.
+Produkty są w pliku `products.json`. Możesz dodać maksymalnie 30 pozycji.
 
-Przyklad:
+Przykład:
 
 ```json
 {
@@ -21,9 +21,9 @@ Przyklad:
 }
 ```
 
-Zdjecia wrzucaj do folderu `images` i wpisuj ich sciezke w polu `image`, np. `images/kawa.jpg`.
+Zdjęcia możesz dodać w panelu admina albo trzymać w folderze `images` i wpisać ich ścieżkę w polu `image`, np. `images/kawa.jpg`.
 
-Po zmianie `products.json` albo zdjec wrzuc ponownie folder aplikacji na Netlify. Wszyscy znajomi zobacza ten sam katalog pod tym samym linkiem.
+Po zmianie `products.json` albo zdjęć opublikuj folder aplikacji. Wszyscy znajomi zobaczą ten sam katalog pod tym samym linkiem.
 
 ## Uruchomienie lokalnie
 

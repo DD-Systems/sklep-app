@@ -18,9 +18,9 @@ const fallbackProducts = [
   },
   {
     id: "miod-lipowy",
-    name: "Miod lipowy",
+    name: "Miód lipowy",
     price: "28,00",
-    description: "Sloik 400 g z lokalnej pasieki.",
+    description: "Słoik 400 g z lokalnej pasieki.",
     image: ""
   }
 ];
@@ -78,7 +78,7 @@ function formatPrice(value) {
   const normalized = String(value).replace(",", ".").replace(/[^0-9.]/g, "");
   const amount = Number.parseFloat(normalized);
   if (Number.isNaN(amount)) {
-    return `${value} zl`;
+    return `${value} zł`;
   }
 
   return new Intl.NumberFormat("pl-PL", {
@@ -104,7 +104,7 @@ function renderProducts() {
   );
 
   grid.innerHTML = "";
-  counter.textContent = `${products.length}/${MAX_PRODUCTS} produktow`;
+  counter.textContent = `${products.length}/${MAX_PRODUCTS} produktów`;
   emptyState.hidden = visibleProducts.length > 0;
 
   visibleProducts.forEach((product) => {
@@ -114,7 +114,7 @@ function renderProducts() {
       card.dataset.viewId = product.id;
       card.tabIndex = 0;
       card.setAttribute("role", "button");
-      card.setAttribute("aria-label", `Powieksz zdjecie: ${product.name}`);
+      card.setAttribute("aria-label", `Powiększ zdjęcie: ${product.name}`);
     }
 
     const photo = product.image
@@ -126,7 +126,7 @@ function renderProducts() {
       <div class="product-body">
         <h2 class="product-name">${escapeHtml(product.name)}</h2>
         <p class="product-description">${escapeHtml(product.description)}</p>
-        ${product.description.length > 82 ? '<button class="description-toggle" type="button">Pokaz opis</button>' : ""}
+        ${product.description.length > 82 ? '<button class="description-toggle" type="button">Pokaż opis</button>' : ""}
         <div class="product-bottom">
           <span class="price">${escapeHtml(formatPrice(product.price))}</span>
         </div>
@@ -173,7 +173,7 @@ grid.addEventListener("click", (event) => {
     event.stopPropagation();
     const card = toggle.closest(".product-card");
     const isOpen = card.classList.toggle("description-open");
-    toggle.textContent = isOpen ? "Zwin opis" : "Pokaz opis";
+    toggle.textContent = isOpen ? "Zwiń opis" : "Pokaż opis";
     return;
   }
 

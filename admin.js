@@ -68,10 +68,10 @@ async function loadProducts() {
 
 function renderList() {
   adminList.innerHTML = "";
-  productCounter.textContent = `${products.length}/${MAX_PRODUCTS} produktow`;
+  productCounter.textContent = `${products.length}/${MAX_PRODUCTS} produktów`;
 
   if (products.length === 0) {
-    adminList.innerHTML = '<p class="admin-empty">Brak produktow.</p>';
+    adminList.innerHTML = '<p class="admin-empty">Brak produktów.</p>';
     return;
   }
 
@@ -82,11 +82,11 @@ function renderList() {
       ${product.image ? `<img src="${escapeHtml(product.image)}" alt="">` : `<div class="admin-thumb">${escapeHtml(product.name[0] || "?")}</div>`}
       <div>
         <h3>${escapeHtml(product.name)}</h3>
-        <p>${escapeHtml(product.price)} zl</p>
+        <p>${escapeHtml(product.price)} zł</p>
       </div>
       <div class="admin-row-actions">
-        <button class="sort-button" type="button" data-move="up" data-id="${escapeHtml(product.id)}" ${index === 0 ? "disabled" : ""} title="Przesun wyzej">↑</button>
-        <button class="sort-button" type="button" data-move="down" data-id="${escapeHtml(product.id)}" ${index === products.length - 1 ? "disabled" : ""} title="Przesun nizej">↓</button>
+        <button class="sort-button" type="button" data-move="up" data-id="${escapeHtml(product.id)}" ${index === 0 ? "disabled" : ""} title="Przesuń wyżej">↑</button>
+        <button class="sort-button" type="button" data-move="down" data-id="${escapeHtml(product.id)}" ${index === products.length - 1 ? "disabled" : ""} title="Przesuń niżej">↓</button>
         <button class="edit-button" type="button" data-edit-id="${escapeHtml(product.id)}">Edytuj</button>
       </div>
     `;
@@ -122,7 +122,7 @@ function editProduct(product) {
 function renderPreview() {
   imagePreview.innerHTML = selectedImage
     ? `<img src="${selectedImage}" alt="">`
-    : "<span>Brak zdjecia</span>";
+    : "<span>Brak zdjęcia</span>";
 }
 
 function resizeImage(file) {
@@ -202,7 +202,7 @@ form.addEventListener("submit", (event) => {
   const existingIndex = products.findIndex((product) => product.id === currentId);
 
   if (existingIndex === -1 && products.length >= MAX_PRODUCTS) {
-    alert("Limit to 30 produktow.");
+    alert("Limit to 30 produktów.");
     return;
   }
 
@@ -255,7 +255,7 @@ importInput.addEventListener("change", async () => {
     clearForm();
     renderList();
   } catch {
-    alert("Nie udalo sie wczytac pliku JSON.");
+    alert("Nie udało się wczytać pliku JSON.");
   }
 
   importInput.value = "";

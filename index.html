@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Katalog">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>Katalog produktow</title>
+    <title>Katalog produktów</title>
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="icon.svg">
     <link rel="stylesheet" href="styles.css">
@@ -19,29 +19,29 @@
           <p class="eyebrow">Lokalny sklep</p>
           <h1>Produkty</h1>
         </div>
-        <button class="icon-button" id="installButton" type="button" hidden title="Zainstaluj aplikacje">
+        <button class="icon-button" id="installButton" type="button" hidden title="Zainstaluj aplikację">
           <span aria-hidden="true">+</span>
         </button>
       </header>
 
-      <section class="controls" aria-label="Narzedzia katalogu">
+      <section class="controls" aria-label="Narzędzia katalogu">
         <label class="search-box">
           <span>Szukaj</span>
           <input id="searchInput" type="search" placeholder="Nazwa produktu">
         </label>
-        <button class="primary-button" id="refreshButton" type="button">Odswiez</button>
+        <button class="primary-button" id="refreshButton" type="button">Odśwież</button>
       </section>
 
       <section class="status-row" aria-live="polite">
-        <span id="productCounter">0/30 produktow</span>
-        <span>Wspolny katalog online</span>
+        <span id="productCounter">0/30 produktów</span>
+        <span>Wspólny katalog online</span>
       </section>
 
-      <section class="product-grid" id="productGrid" aria-label="Lista produktow"></section>
+      <section class="product-grid" id="productGrid" aria-label="Lista produktów"></section>
 
       <section class="empty-state" id="emptyState" hidden>
-        <h2>Brak produktow</h2>
-        <p>Katalog jest pusty albo chwilowo nie udalo sie pobrac listy produktow.</p>
+        <h2>Brak produktów</h2>
+        <p>Katalog jest pusty albo chwilowo nie udało się pobrać listy produktów.</p>
       </section>
     </main>
 

@@ -1,0 +1,17 @@
+{
+  "name": "Katalog produktów",
+  "short_name": "Katalog",
+  "description": "Prosty mobilny katalog produktów ze zdjęciami i cenami.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f7f4ef",
+  "theme_color": "#145c63",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

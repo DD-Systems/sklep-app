@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#145c63">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Katalog">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Katalog produktow</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Lokalny sklep</p>
+          <h1>Produkty</h1>
+        </div>
+        <button class="icon-button" id="installButton" type="button" hidden title="Zainstaluj aplikacje">
+          <span aria-hidden="true">+</span>
+        </button>
+      </header>
+
+      <section class="controls" aria-label="Narzedzia katalogu">
+        <label class="search-box">
+          <span>Szukaj</span>
+          <input id="searchInput" type="search" placeholder="Nazwa produktu">
+        </label>
+        <button class="primary-button" id="refreshButton" type="button">Odswiez</button>
+      </section>
+
+      <section class="status-row" aria-live="polite">
+        <span id="productCounter">0/30 produktow</span>
+        <span>Wspolny katalog online</span>
+      </section>
+
+      <section class="product-grid" id="productGrid" aria-label="Lista produktow"></section>
+
+      <section class="empty-state" id="emptyState" hidden>
+        <h2>Brak produktow</h2>
+        <p>Katalog jest pusty albo chwilowo nie udalo sie pobrac listy produktow.</p>
+      </section>
+    </main>
+
+    <dialog class="image-dialog" id="imageDialog">
+      <button class="icon-button image-close" id="closeImageButton" type="button" title="Zamknij">
+        <span aria-hidden="true">x</span>
+      </button>
+      <img id="largeImage" alt="">
+      <p id="largeImageCaption"></p>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>

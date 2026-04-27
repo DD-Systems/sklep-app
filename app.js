@@ -30,7 +30,6 @@ const fallbackProducts = [
 const grid = document.querySelector("#productGrid");
 const emptyState = document.querySelector("#emptyState");
 const counter = document.querySelector("#productCounter");
-const refreshButton = document.querySelector("#refreshButton");
 const installButton = document.querySelector("#installButton");
 const cartToggle = document.querySelector("#cartToggle");
 const cartPanel = document.querySelector("#cartPanel");
@@ -388,8 +387,6 @@ imageDialog.addEventListener("click", (event) => {
 });
 
 closeImageButton.addEventListener("click", closeLargeImage);
-
-refreshButton.addEventListener("click", loadProducts);
 
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();

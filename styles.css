@@ -78,6 +78,7 @@ h1 {
 }
 
 .controls {
+  justify-content: flex-end;
   gap: 12px;
   flex-wrap: wrap;
   padding: 14px;
@@ -85,6 +86,33 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
+}
+
+.friend-note {
+  margin: 16px 0 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.friend-note h2 {
+  margin-bottom: 8px;
+  font-size: clamp(1.1rem, 3vw, 1.55rem);
+  line-height: 1.2;
+}
+
+.friend-note p {
+  margin-bottom: 8px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.friend-note p:last-child {
+  margin-bottom: 0;
+  color: var(--brand-strong);
+  font-weight: 900;
 }
 
 .search-box {
@@ -655,7 +683,6 @@ textarea:focus {
 }
 
 @media (max-width: 540px) {
-  .controls,
   .primary-button {
     width: 100%;
   }

@@ -30,7 +30,6 @@ const fallbackProducts = [
 const grid = document.querySelector("#productGrid");
 const emptyState = document.querySelector("#emptyState");
 const counter = document.querySelector("#productCounter");
-const searchInput = document.querySelector("#searchInput");
 const refreshButton = document.querySelector("#refreshButton");
 const installButton = document.querySelector("#installButton");
 const cartToggle = document.querySelector("#cartToggle");
@@ -126,10 +125,7 @@ function productInitials(name) {
 }
 
 function renderProducts() {
-  const query = searchInput.value.trim().toLowerCase();
-  const visibleProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(query)
-  );
+  const visibleProducts = products;
 
   grid.innerHTML = "";
   counter.textContent = `${products.length}/${MAX_PRODUCTS} produktów`;
@@ -284,12 +280,7 @@ function sendOrderByEmail() {
     "----------------------------------------",
     "",
     `Suma sztuk: ${totals.quantity}`,
-    `Suma zamówienia: ${formatPrice(totals.total)}`,
-    "",
-    "Dane do kontaktu:",
-    "Imię i nazwisko:",
-    "Telefon:",
-    "Adres / odbiór:"
+    `Suma zamówienia: ${formatPrice(totals.total)}`
   ].join("\n");
 
   const subject = encodeURIComponent("Zamówienie ze sklepu");
@@ -398,7 +389,6 @@ imageDialog.addEventListener("click", (event) => {
 
 closeImageButton.addEventListener("click", closeLargeImage);
 
-searchInput.addEventListener("input", renderProducts);
 refreshButton.addEventListener("click", loadProducts);
 
 window.addEventListener("beforeinstallprompt", (event) => {

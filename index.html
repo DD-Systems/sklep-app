@@ -34,7 +34,22 @@
 
       <section class="status-row" aria-live="polite">
         <span id="productCounter">0/30 produktów</span>
-        <span>Wspólny katalog online</span>
+        <button class="cart-toggle" id="cartToggle" type="button">Koszyk: 0 szt. / 0,00 zł</button>
+      </section>
+
+      <section class="cart-panel" id="cartPanel" aria-label="Koszyk zakupowy">
+        <header class="cart-header">
+          <div>
+            <h2>Koszyk</h2>
+            <p id="cartSummary">0 produktów, 0 szt.</p>
+          </div>
+          <button class="text-button danger" id="clearCartButton" type="button">Wyczyść</button>
+        </header>
+        <div class="cart-items" id="cartItems"></div>
+        <footer class="cart-total">
+          <span>Razem</span>
+          <strong id="cartTotal">0,00 zł</strong>
+        </footer>
       </section>
 
       <section class="product-grid" id="productGrid" aria-label="Lista produktów"></section>

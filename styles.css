@@ -305,7 +305,7 @@ textarea:focus {
 .preview {
   display: grid;
   place-items: center;
-  background: #dfe9e2;
+  background: #fff;
   color: var(--brand-strong);
 }
 
@@ -313,7 +313,7 @@ textarea:focus {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: contain;
-  background: #dfe9e2;
+  background: #fff;
 }
 
 .product-card.is-clickable {
@@ -334,6 +334,7 @@ textarea:focus {
   display: flex;
   flex: 1;
   flex-direction: column;
+  background: #dfe9e2;
   padding: 13px;
 }
 

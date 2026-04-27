@@ -191,6 +191,24 @@ textarea:focus {
   font-size: 1.3rem;
 }
 
+.install-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 900;
+}
+
+.install-button span:first-child {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
 .icon-button.subtle {
   background: #edf2ef;
   color: var(--ink);
@@ -310,6 +328,16 @@ textarea:focus {
 .quantity-controls span {
   min-width: 24px;
   text-align: center;
+  font-weight: 900;
+}
+
+.remove-cart-button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(169, 39, 39, 0.28);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--danger);
   font-weight: 900;
 }
 
@@ -693,6 +721,11 @@ textarea:focus {
   .cart-item {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .install-button {
+    max-width: 190px;
+    line-height: 1.15;
   }
 
   .product-grid {

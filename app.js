@@ -240,6 +240,7 @@ function renderCart() {
         <span>${quantity}</span>
         <button type="button" data-cart-change="1" data-cart-id="${escapeHtml(product.id)}" ${quantity >= STOCK_PER_PRODUCT ? "disabled" : ""}>+</button>
       </div>
+      <button class="remove-cart-button" type="button" data-cart-remove="${escapeHtml(product.id)}">Usuń</button>
       <strong>${escapeHtml(formatPrice(lineTotal))}</strong>
     `;
     cartItems.appendChild(item);
@@ -341,6 +342,12 @@ grid.addEventListener("click", (event) => {
 });
 
 cartItems.addEventListener("click", (event) => {
+  const removeButton = event.target.closest("[data-cart-remove]");
+  if (removeButton) {
+    setCartQuantity(removeButton.dataset.cartRemove, 0);
+    return;
+  }
+
   const button = event.target.closest("[data-cart-change]");
   if (!button) {
     return;

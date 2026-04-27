@@ -12,15 +12,27 @@ const closeImageButton = document.querySelector("#closeImageButton");
 let products = [];
 let cart = [];
 
+function parsePrice(value) {
+  const normalized = String(value).replace(",", ".").replace(/[^0-9.]/g, "");
+  const parsed = Number.parseFloat(normalized);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function formatPrice(value) {
+  return `${value.toFixed(2).replace(".", ",")} zł`;
+}
+
 async function loadProducts() {
   try {
     const response = await fetch(`${PRODUCTS_URL}?t=${Date.now()}`);
     const data = await response.json();
-    // Inicjalizacja: jeśli brak stock, ustaw 50
-    products = data.map(p => ({
+    // Każdy produkt startuje z ilością 50 sztuk.
+    products = data.map((p) => ({
       ...p,
-      stock: p.stock || 50
+      stock: 50,
+      unitPrice: parsePrice(p.price)
     }));
+    cart = [];
     renderProducts();
   } catch (error) {
     console.error("Błąd ładowania:", error);
@@ -46,7 +58,7 @@ function renderProducts() {
       </div>
       <div class="product-info">
         <h3>${product.name}</h3>
-        <p class="price">${product.price} zł</p>
+        <p class="price">${formatPrice(product.unitPrice)}</p>
         <p class="stock-info">
            Kupiono <strong>${boughtQty}</strong> z ${product.stock} <br>
            (Zostało: ${remaining})
@@ -67,28 +79,41 @@ function renderProducts() {
 }
 
 window.addToCart = function(id) {
-  const product = products.find(p => p.id === id);
-  const cartItem = cart.find(item => item.id === id);
+  const product = products.find((p) => p.id === id);
+  if (!product) {
+    return;
+  }
+
+  const cartItem = cart.find((item) => item.id === id);
+  const currentQuantity = cartItem ? cartItem.quantity : 0;
+
+  if (currentQuantity >= product.stock) {
+    return;
+  }
 
   if (cartItem) {
-    if (cartItem.quantity < product.stock) {
-      cartItem.quantity++;
-    }
+    cartItem.quantity += 1;
   } else {
-    cart.push({ id: id, price: product.price, quantity: 1 });
+    cart.push({
+      id,
+      name: product.name,
+      unitPrice: product.unitPrice,
+      quantity: 1
+    });
   }
+
   renderProducts();
 };
 
 function updateCartUI() {
   const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cart.reduce((sum, item) => {
-    const p = parseFloat(item.price.toString().replace(',', '.'));
-    return sum + (p * item.quantity);
-  }, 0);
+  const totalPrice = cart.reduce(
+    (sum, item) => sum + item.unitPrice * item.quantity,
+    0
+  );
 
   cartCountDisplay.textContent = totalQty;
-  cartTotalDisplay.textContent = totalPrice.toFixed(2).replace('.', ',') + " zł";
+  cartTotalDisplay.textContent = formatPrice(totalPrice);
 }
 
 function openImage(product) {

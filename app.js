@@ -39,6 +39,7 @@ const cartItems = document.querySelector("#cartItems");
 const cartSummary = document.querySelector("#cartSummary");
 const cartTotal = document.querySelector("#cartTotal");
 const clearCartButton = document.querySelector("#clearCartButton");
+const sendOrderButton = document.querySelector("#sendOrderButton");
 const imageDialog = document.querySelector("#imageDialog");
 const largeImage = document.querySelector("#largeImage");
 const largeImageCaption = document.querySelector("#largeImageCaption");
@@ -220,6 +221,7 @@ function renderCart() {
   cartSummary.textContent = `${entries.length} produktów, ${totals.quantity} szt.`;
   cartTotal.textContent = formatPrice(totals.total);
   clearCartButton.hidden = entries.length === 0;
+  sendOrderButton.hidden = entries.length === 0;
 
   cartItems.innerHTML = "";
 
@@ -247,6 +249,46 @@ function renderCart() {
     `;
     cartItems.appendChild(item);
   });
+}
+
+function orderEmailAddress() {
+  return ["hrabia30", "gmail.com"].join("@");
+}
+
+function sendOrderByEmail() {
+  const entries = getCartEntries();
+  if (entries.length === 0) {
+    alert("Koszyk jest pusty.");
+    return;
+  }
+
+  const totals = cartTotals();
+  const lines = entries.map(({ product, quantity }) => {
+    const price = parsePrice(product.price);
+    const lineTotal = Number.isNaN(price) ? 0 : price * quantity;
+    return `- ${product.name}\n  Ilość: ${quantity} szt.\n  Cena: ${formatPrice(product.price)} / szt.\n  Razem: ${formatPrice(lineTotal)}`;
+  });
+
+  const body = [
+    "Dzień dobry,",
+    "",
+    "Chcę złożyć zamówienie:",
+    "",
+    ...lines,
+    "",
+    `Suma sztuk: ${totals.quantity}`,
+    `Suma zamówienia: ${formatPrice(totals.total)}`,
+    "",
+    "Dane do kontaktu:",
+    "Imię i nazwisko:",
+    "Telefon:",
+    "Adres / odbiór:"
+  ].join("\n");
+
+  const mailto = new URL(`mailto:${orderEmailAddress()}`);
+  mailto.searchParams.set("subject", "Zamówienie ze sklepu");
+  mailto.searchParams.set("body", body);
+  window.location.href = mailto.toString();
 }
 
 function escapeHtml(value) {
@@ -323,6 +365,8 @@ clearCartButton.addEventListener("click", () => {
   renderCart();
   renderProducts();
 });
+
+sendOrderButton.addEventListener("click", sendOrderByEmail);
 
 grid.addEventListener("keydown", (event) => {
   if (event.target.closest("button")) {

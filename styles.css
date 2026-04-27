@@ -216,6 +216,13 @@ textarea:focus {
   gap: 12px;
 }
 
+.cart-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .cart-header h2,
 .cart-item h3 {
   margin: 0;
@@ -653,6 +660,8 @@ textarea:focus {
   }
 
   .status-row,
+  .cart-header,
+  .cart-actions,
   .cart-item {
     align-items: stretch;
     flex-direction: column;

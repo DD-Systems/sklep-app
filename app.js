@@ -263,10 +263,15 @@ function sendOrderByEmail() {
   }
 
   const totals = cartTotals();
-  const lines = entries.map(({ product, quantity }) => {
+  const lines = entries.map(({ product, quantity }, index) => {
     const price = parsePrice(product.price);
     const lineTotal = Number.isNaN(price) ? 0 : price * quantity;
-    return `- ${product.name}\n  Ilość: ${quantity} szt.\n  Cena: ${formatPrice(product.price)} / szt.\n  Razem: ${formatPrice(lineTotal)}`;
+    return [
+      `${index + 1}. ${product.name}`,
+      `   Ilość: ${quantity} szt.`,
+      `   Cena: ${formatPrice(product.price)} / szt.`,
+      `   Razem: ${formatPrice(lineTotal)}`
+    ].join("\n");
   });
 
   const body = [
@@ -274,7 +279,9 @@ function sendOrderByEmail() {
     "",
     "Chcę złożyć zamówienie:",
     "",
+    "----------------------------------------",
     ...lines,
+    "----------------------------------------",
     "",
     `Suma sztuk: ${totals.quantity}`,
     `Suma zamówienia: ${formatPrice(totals.total)}`,
@@ -285,10 +292,9 @@ function sendOrderByEmail() {
     "Adres / odbiór:"
   ].join("\n");
 
-  const mailto = new URL(`mailto:${orderEmailAddress()}`);
-  mailto.searchParams.set("subject", "Zamówienie ze sklepu");
-  mailto.searchParams.set("body", body);
-  window.location.href = mailto.toString();
+  const subject = encodeURIComponent("Zamówienie ze sklepu");
+  const encodedBody = encodeURIComponent(body);
+  window.location.href = `mailto:${orderEmailAddress()}?subject=${subject}&body=${encodedBody}`;
 }
 
 function escapeHtml(value) {

@@ -1,7 +1,7 @@
-const MAX_PRODUCTS = 30;
-const STOCK_PER_PRODUCT = 30;
+﻿const MAX_PRODUCTS = 30;
 const PRODUCTS_URL = "products.json";
 const CART_STORAGE_KEY = "simple-shop-cart-v1";
+const DEFAULT_STOCK_PER_PRODUCT = 30;
 
 const fallbackProducts = [
   {
@@ -73,8 +73,48 @@ function normalizeProducts(items) {
       name: String(product.name),
       price: String(product.price),
       description: String(product.description || ""),
-      image: String(product.image || "")
+      image: String(product.image || ""),
+      stock: normalizeStock(product.stock)
     }));
+}
+
+function normalizeStock(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_STOCK_PER_PRODUCT;
+}
+
+function getProductStock(product) {
+  return normalizeStock(product?.stock);
+}
+
+function syncCartToStock() {
+  let changed = false;
+
+  for (const [productId, quantity] of Object.entries(cart)) {
+    const product = products.find((item) => item.id === productId);
+    if (!product) {
+      delete cart[productId];
+      changed = true;
+      continue;
+    }
+
+    const stock = getProductStock(product);
+    const safeQuantity = Math.max(0, Math.min(stock, quantity));
+
+    if (safeQuantity !== quantity) {
+      changed = true;
+    }
+
+    if (safeQuantity === 0) {
+      delete cart[productId];
+    } else {
+      cart[productId] = safeQuantity;
+    }
+  }
+
+  if (changed) {
+    saveCart();
+  }
 }
 
 async function loadProducts() {
@@ -92,6 +132,7 @@ async function loadProducts() {
     products = fallbackProducts;
   }
 
+  syncCartToStock();
   renderProducts();
   renderCart();
 }
@@ -132,6 +173,7 @@ function renderProducts() {
 
   visibleProducts.forEach((product) => {
     const quantityInCart = cart[product.id] || 0;
+    const stock = getProductStock(product);
     const card = document.createElement("article");
     card.className = "product-card";
 
@@ -149,10 +191,10 @@ function renderProducts() {
         <h2 class="product-name">${escapeHtml(product.name)}</h2>
         <p class="product-description">${escapeHtml(product.description)}</p>
         ${product.description.length > 82 ? '<button class="description-toggle" type="button">Pokaż opis</button>' : ""}
-        <p class="stock-note">${STOCK_PER_PRODUCT} szt. dostępne</p>
+        <p class="stock-note">${stock} szt. dostępne</p>
         <div class="product-bottom">
           <span class="price">${escapeHtml(formatPrice(product.price))}</span>
-          <button class="add-cart-button" type="button" data-cart-id="${escapeHtml(product.id)}" ${quantityInCart >= STOCK_PER_PRODUCT ? "disabled" : ""}>${quantityInCart > 0 ? `W koszyku: ${quantityInCart}` : "Dodaj"}</button>
+          <button class="add-cart-button" type="button" data-cart-id="${escapeHtml(product.id)}" ${quantityInCart >= stock ? "disabled" : ""}>${quantityInCart > 0 ? `W koszyku: ${quantityInCart}` : "Dodaj"}</button>
         </div>
       </div>
     `;
@@ -183,7 +225,9 @@ function cartTotals() {
 }
 
 function setCartQuantity(productId, quantity) {
-  const safeQuantity = Math.max(0, Math.min(STOCK_PER_PRODUCT, quantity));
+  const product = products.find((item) => item.id === productId);
+  const stock = getProductStock(product);
+  const safeQuantity = Math.max(0, Math.min(stock, quantity));
   if (safeQuantity === 0) {
     delete cart[productId];
   } else {
@@ -197,7 +241,9 @@ function setCartQuantity(productId, quantity) {
 
 function addToCart(productId) {
   const currentQuantity = cart[productId] || 0;
-  if (currentQuantity >= STOCK_PER_PRODUCT) {
+  const product = products.find((item) => item.id === productId);
+  const stock = getProductStock(product);
+  if (currentQuantity >= stock) {
     alert("W koszyku jest już maksymalna ilość tego produktu.");
     return;
   }
@@ -224,6 +270,7 @@ function renderCart() {
   }
 
   entries.forEach(({ product, quantity }) => {
+    const stock = getProductStock(product);
     const price = parsePrice(product.price);
     const lineTotal = Number.isNaN(price) ? 0 : price * quantity;
     const item = document.createElement("article");
@@ -231,12 +278,12 @@ function renderCart() {
     item.innerHTML = `
       <div>
         <h3>${escapeHtml(product.name)}</h3>
-        <p>${escapeHtml(formatPrice(product.price))} / szt. · max ${STOCK_PER_PRODUCT} szt.</p>
+        <p>${escapeHtml(formatPrice(product.price))} / szt. · max ${stock} szt.</p>
       </div>
       <div class="quantity-controls">
         <button type="button" data-cart-change="-1" data-cart-id="${escapeHtml(product.id)}">−</button>
         <span>${quantity}</span>
-        <button type="button" data-cart-change="1" data-cart-id="${escapeHtml(product.id)}" ${quantity >= STOCK_PER_PRODUCT ? "disabled" : ""}>+</button>
+        <button type="button" data-cart-change="1" data-cart-id="${escapeHtml(product.id)}" ${quantity >= stock ? "disabled" : ""}>+</button>
       </div>
       <button class="remove-cart-button" type="button" data-cart-remove="${escapeHtml(product.id)}">Usuń</button>
       <strong>${escapeHtml(formatPrice(lineTotal))}</strong>
@@ -401,3 +448,7 @@ if ("serviceWorker" in navigator) {
 }
 
 loadProducts();
+
+
+
+

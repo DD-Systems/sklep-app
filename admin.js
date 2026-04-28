@@ -1,4 +1,4 @@
-const MAX_PRODUCTS = 30;
+﻿const MAX_PRODUCTS = 30;
 const PRODUCTS_URL = new URL("../products.json", window.location.href).href;
 
 const form = document.querySelector("#adminForm");
@@ -7,6 +7,7 @@ const productId = document.querySelector("#productId");
 const nameInput = document.querySelector("#nameInput");
 const priceInput = document.querySelector("#priceInput");
 const descriptionInput = document.querySelector("#descriptionInput");
+const stockInput = document.querySelector("#stockInput");
 const imageInput = document.querySelector("#imageInput");
 const imagePreview = document.querySelector("#imagePreview");
 const deleteButton = document.querySelector("#deleteButton");
@@ -45,10 +46,15 @@ function normalizeProducts(items) {
       name: String(product.name),
       price: String(product.price),
       description: String(product.description || ""),
-      image: String(product.image || "")
+      image: String(product.image || ""),
+      stock: normalizeStock(product.stock)
     }));
 }
 
+function normalizeStock(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 30;
+}
 async function loadProducts() {
   try {
     const response = await fetch(`${PRODUCTS_URL}?v=${Date.now()}`, {
@@ -88,7 +94,7 @@ function renderList() {
       ${product.image ? `<img src="${escapeHtml(product.image)}" alt="">` : `<div class="admin-thumb">${escapeHtml(product.name[0] || "?")}</div>`}
       <div>
         <h3>${escapeHtml(product.name)}</h3>
-        <p>${escapeHtml(product.price)} zł</p>
+        <p>${escapeHtml(product.price)} zł · ${escapeHtml(String(product.stock || 30))} szt.</p>
       </div>
       <div class="admin-row-actions">
         <button class="sort-button" type="button" data-move="up" data-id="${escapeHtml(product.id)}" ${index === 0 ? "disabled" : ""} title="Przesuń wyżej">↑</button>
@@ -105,6 +111,7 @@ function clearForm() {
   nameInput.value = "";
   priceInput.value = "";
   descriptionInput.value = "";
+  stockInput.value = "30";
   imageInput.value = "";
   selectedImage = "";
   formTitle.textContent = "Dodaj produkt";
@@ -117,6 +124,7 @@ function editProduct(product) {
   nameInput.value = product.name;
   priceInput.value = product.price;
   descriptionInput.value = product.description;
+  stockInput.value = String(product.stock || 30);
   selectedImage = product.image;
   imageInput.value = "";
   formTitle.textContent = "Edytuj produkt";
@@ -217,6 +225,7 @@ form.addEventListener("submit", (event) => {
     name: nameInput.value.trim(),
     price: priceInput.value.trim(),
     description: descriptionInput.value.trim(),
+    stock: normalizeStock(stockInput.value),
     image: selectedImage
   };
 
@@ -268,3 +277,5 @@ importInput.addEventListener("change", async () => {
 });
 
 loadProducts();
+
+

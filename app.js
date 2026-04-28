@@ -248,7 +248,7 @@ function renderCart() {
 }
 
 function orderEmailAddress() {
-  return ["hrabia30", "gmail.com"].join("@");
+  return ["sklepapp2026", "gmail.com"].join("@");
 }
 
 function sendOrderByEmail() {

@@ -133,16 +133,14 @@ function renderProducts() {
   visibleProducts.forEach((product) => {
     const quantityInCart = cart[product.id] || 0;
     const card = document.createElement("article");
-    card.className = product.image ? "product-card is-clickable" : "product-card";
-    if (product.image) {
-      card.dataset.viewId = product.id;
-      card.tabIndex = 0;
-      card.setAttribute("role", "button");
-      card.setAttribute("aria-label", `Powiększ zdjęcie: ${product.name}`);
-    }
+    card.className = "product-card";
 
     const photo = product.image
-      ? `<img class="product-photo" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}">`
+      ? `
+        <button class="product-photo-button" type="button" data-view-id="${escapeHtml(product.id)}" aria-label="Powiększ zdjęcie: ${escapeHtml(product.name)}">
+          <img class="product-photo" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}">
+        </button>
+      `
       : `<div class="product-photo"><span class="photo-fallback">${escapeHtml(productInitials(product.name))}</span></div>`;
 
     card.innerHTML = `
@@ -309,8 +307,8 @@ function closeLargeImage() {
   largeImage.removeAttribute("src");
 }
 
-function openProductImageFromCard(card) {
-  const product = products.find((item) => item.id === card.dataset.viewId);
+function openProductImageFromTrigger(trigger) {
+  const product = products.find((item) => item.id === trigger.dataset.viewId);
   if (!product || !product.image) {
     return;
   }
@@ -335,9 +333,9 @@ grid.addEventListener("click", (event) => {
     return;
   }
 
-  const card = event.target.closest("[data-view-id]");
-  if (card) {
-    openProductImageFromCard(card);
+  const trigger = event.target.closest("[data-view-id]");
+  if (trigger) {
+    openProductImageFromTrigger(trigger);
   }
 });
 
@@ -370,22 +368,6 @@ clearCartButton.addEventListener("click", () => {
 });
 
 sendOrderButton.addEventListener("click", sendOrderByEmail);
-
-grid.addEventListener("keydown", (event) => {
-  if (event.target.closest("button")) {
-    return;
-  }
-
-  if (event.key !== "Enter" && event.key !== " ") {
-    return;
-  }
-
-  const card = event.target.closest("[data-view-id]");
-  if (card) {
-    event.preventDefault();
-    openProductImageFromCard(card);
-  }
-});
 
 imageDialog.addEventListener("click", (event) => {
   if (event.target === imageDialog) {

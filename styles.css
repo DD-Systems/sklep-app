@@ -379,20 +379,25 @@ textarea:focus {
   color: var(--brand-strong);
 }
 
+.product-photo-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: #fff;
+  cursor: zoom-in;
+}
+
+.product-photo-button:focus-visible {
+  outline: 3px solid rgba(20, 92, 99, 0.28);
+  outline-offset: -3px;
+}
+
 .product-photo {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: contain;
   background: #fff;
-}
-
-.product-card.is-clickable {
-  cursor: zoom-in;
-}
-
-.product-card.is-clickable:focus {
-  outline: 3px solid rgba(20, 92, 99, 0.28);
-  outline-offset: 3px;
 }
 
 .photo-fallback {

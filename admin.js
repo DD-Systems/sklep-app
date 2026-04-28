@@ -1,5 +1,5 @@
 const MAX_PRODUCTS = 30;
-const PRODUCTS_URL = "products.json";
+const PRODUCTS_URL = "../products.json";
 
 const form = document.querySelector("#adminForm");
 const formTitle = document.querySelector("#formTitle");

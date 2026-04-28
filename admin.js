@@ -1,5 +1,5 @@
 const MAX_PRODUCTS = 30;
-const PRODUCTS_URL = "../products.json";
+const PRODUCTS_URL = new URL("../products.json", window.location.href).href;
 
 const form = document.querySelector("#adminForm");
 const formTitle = document.querySelector("#formTitle");
@@ -16,9 +16,11 @@ const reloadButton = document.querySelector("#reloadButton");
 const importInput = document.querySelector("#importInput");
 const adminList = document.querySelector("#adminList");
 const productCounter = document.querySelector("#productCounter");
+const loadStatus = document.querySelector("#loadStatus");
 
 let products = [];
 let selectedImage = "";
+let lastLoadError = "";
 
 function slugify(value) {
   return String(value)
@@ -58,8 +60,10 @@ async function loadProducts() {
     }
 
     products = normalizeProducts(await response.json());
-  } catch {
+    lastLoadError = "";
+  } catch (error) {
     products = [];
+    lastLoadError = error instanceof Error ? error.message : "Nie udało się wczytać products.json.";
   }
 
   clearForm();
@@ -69,9 +73,11 @@ async function loadProducts() {
 function renderList() {
   adminList.innerHTML = "";
   productCounter.textContent = `${products.length}/${MAX_PRODUCTS} produktów`;
+  loadStatus.textContent = lastLoadError || `Źródło danych: ${PRODUCTS_URL}`;
+  loadStatus.classList.toggle("error-text", Boolean(lastLoadError));
 
   if (products.length === 0) {
-    adminList.innerHTML = '<p class="admin-empty">Brak produktów.</p>';
+    adminList.innerHTML = `<p class="admin-empty">${lastLoadError ? "Nie udało się wczytać produktów." : "Brak produktów."}</p>`;
     return;
   }
 

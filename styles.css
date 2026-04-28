@@ -601,6 +601,10 @@ textarea:focus {
   color: var(--muted);
 }
 
+.error-text {
+  color: #a63e22;
+}
+
 .admin-row-actions {
   display: flex;
   align-items: center;

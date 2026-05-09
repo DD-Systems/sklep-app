@@ -1,6 +1,25 @@
 # Katalog produktów
 
-Prosta darmowa aplikacja PWA na Androida i iPhone'a. Wersja publiczna pokazuje jeden wspólny katalog dla wszystkich użytkowników.
+Prosta aplikacja PWA na Androida i iPhone'a. Wersja publiczna pokazuje jeden wspólny katalog dla wszystkich użytkowników.
+
+## Magazyn i potwierdzanie zamówień
+
+Sam `GitHub Pages` nie zapisuje zamówień. Dlatego magazyn działa poprawnie dopiero po podpięciu API.
+
+Nowy model:
+
+- klient składa zamówienie jako `oczekujące`
+- w panelu admina widzisz listę zamówień
+- stan magazynowy schodzi dopiero po kliknięciu `Potwierdź`
+- panel pokazuje `sprzedano` i `zostało`
+
+Gotowy wariant backendu jest w:
+
+`backend/cloudflare/`
+
+Po wdrożeniu backendu wpisz adres API w:
+
+`shop-config.js`
 
 ## Jak edytować produkty
 

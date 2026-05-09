@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#145c63">
     <title>Panel admina - katalog produktow</title>
     <link rel="stylesheet" href="../styles.css">
+    <script src="../shop-config.js"></script>
   </head>
   <body>
     <main class="app-shell admin-shell">
@@ -71,6 +72,21 @@
             <button class="primary-button" id="downloadButton" type="button">Pobierz products.json</button>
           </header>
 
+          <section class="admin-api-box">
+            <div>
+              <h3>Magazyn i zamowienia</h3>
+              <p id="adminApiStatus">Podlacz API, aby zamowienia oczekiwaly na potwierdzenie i dopiero wtedy zmniejszaly stan.</p>
+            </div>
+            <div class="admin-api-actions">
+              <label class="admin-password-field">
+                <span>Haslo admina magazynu</span>
+                <input id="adminPassword" type="password" placeholder="Wpisz haslo">
+              </label>
+              <button class="text-button" id="savePasswordButton" type="button">Polacz</button>
+              <button class="text-button" id="syncInventoryButton" type="button">Synchronizuj stany</button>
+            </div>
+          </section>
+
           <div class="admin-toolbar">
             <button class="text-button" id="reloadButton" type="button">Wczytaj z products.json</button>
             <label class="file-import">
@@ -80,12 +96,22 @@
           </div>
 
           <p class="admin-empty" id="loadStatus">Ładowanie produktów...</p>
+          <section class="summary-grid" id="inventorySummary"></section>
           <div class="admin-list" id="adminList"></div>
+          <section class="orders-section">
+            <header class="admin-section-header">
+              <div>
+                <h2>Zamowienia</h2>
+                <p>Stan schodzi dopiero po kliknieciu Potwierdz.</p>
+              </div>
+            </header>
+            <div class="order-list" id="orderList"></div>
+          </section>
         </section>
       </section>
     </main>
 
-    <script src="../admin.js?v=20260428-stock-fix"></script>
+    <script src="../admin.js?v=20260509-orders"></script>
   </body>
 </html>
 

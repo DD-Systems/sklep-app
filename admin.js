@@ -1,5 +1,8 @@
-﻿const MAX_PRODUCTS = 30;
+const MAX_PRODUCTS = 30;
 const PRODUCTS_URL = new URL("../products.json", window.location.href).href;
+const SHOP_CONFIG = window.SHOP_CONFIG || {};
+const ORDER_API_URL = String(SHOP_CONFIG.orderApiUrl || "").trim();
+const ADMIN_PASSWORD_STORAGE_KEY = "simple-shop-admin-password";
 
 const form = document.querySelector("#adminForm");
 const formTitle = document.querySelector("#formTitle");
@@ -18,10 +21,30 @@ const importInput = document.querySelector("#importInput");
 const adminList = document.querySelector("#adminList");
 const productCounter = document.querySelector("#productCounter");
 const loadStatus = document.querySelector("#loadStatus");
+const adminPasswordInput = document.querySelector("#adminPassword");
+const savePasswordButton = document.querySelector("#savePasswordButton");
+const syncInventoryButton = document.querySelector("#syncInventoryButton");
+const adminApiStatus = document.querySelector("#adminApiStatus");
+const orderList = document.querySelector("#orderList");
+const inventorySummary = document.querySelector("#inventorySummary");
 
 let products = [];
 let selectedImage = "";
 let lastLoadError = "";
+let inventoryMap = new Map();
+let orders = [];
+
+function isApiEnabled() {
+  return /^https?:\/\//i.test(ORDER_API_URL);
+}
+
+function getAdminPassword() {
+  return sessionStorage.getItem(ADMIN_PASSWORD_STORAGE_KEY) || "";
+}
+
+function setAdminPassword(value) {
+  sessionStorage.setItem(ADMIN_PASSWORD_STORAGE_KEY, value);
+}
 
 function slugify(value) {
   return String(value)
@@ -53,27 +76,135 @@ function normalizeProducts(items) {
 
 function normalizeStock(value) {
   const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 30;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 30;
 }
-async function loadProducts() {
-  try {
-    const response = await fetch(`${PRODUCTS_URL}?v=${Date.now()}`, {
-      cache: "no-store"
-    });
 
-    if (!response.ok) {
-      throw new Error(`Products request failed: ${response.status}`);
+function formatMoney(value) {
+  return new Intl.NumberFormat("pl-PL", {
+    style: "currency",
+    currency: "PLN"
+  }).format(Number(value || 0));
+}
+
+function inventoryRecord(productId) {
+  return inventoryMap.get(productId) || null;
+}
+
+function currentStockFor(product) {
+  return inventoryRecord(product.id)?.currentStock ?? normalizeStock(product.stock);
+}
+
+async function apiRequest(payload, requireAuth = false) {
+  const finalPayload = { ...payload };
+  if (requireAuth) {
+    const adminPassword = adminPasswordInput.value.trim() || getAdminPassword();
+    if (!adminPassword) {
+      throw new Error("Podaj hasło administratora do magazynu.");
     }
-
-    products = normalizeProducts(await response.json());
-    lastLoadError = "";
-  } catch (error) {
-    products = [];
-    lastLoadError = error instanceof Error ? error.message : "Nie udało się wczytać products.json.";
+    finalPayload.adminPassword = adminPassword;
   }
 
-  clearForm();
-  renderList();
+  const response = await fetch(ORDER_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(finalPayload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Błąd API: ${response.status}`);
+  }
+
+  const data = await response.json();
+  if (!data.ok) {
+    throw new Error(data.error || "Nie udało się wykonać operacji.");
+  }
+
+  return data;
+}
+
+function renderInventorySummary() {
+  if (!isApiEnabled()) {
+    inventorySummary.innerHTML = '<p class="admin-empty">Brak podpiętego API magazynu.</p>';
+    return;
+  }
+
+  const cards = products.map((product) => {
+    const inventory = inventoryRecord(product.id);
+    const currentStock = inventory ? inventory.currentStock : normalizeStock(product.stock);
+    const confirmedSold = inventory ? inventory.confirmedSold : 0;
+    return `
+      <article class="summary-card">
+        <strong>${escapeHtml(product.name)}</strong>
+        <span>Zostało: ${currentStock} szt.</span>
+        <span>Sprzedano: ${confirmedSold} szt.</span>
+      </article>
+    `;
+  });
+
+  inventorySummary.innerHTML = cards.join("") || '<p class="admin-empty">Brak produktów do podsumowania.</p>';
+}
+
+function renderOrders() {
+  if (!isApiEnabled()) {
+    orderList.innerHTML = '<p class="admin-empty">Podłącz API, aby widzieć zamówienia oczekujące i potwierdzać je ręcznie.</p>';
+    return;
+  }
+
+  if (!orders.length) {
+    orderList.innerHTML = '<p class="admin-empty">Brak zapisanych zamówień.</p>';
+    return;
+  }
+
+  orderList.innerHTML = orders
+    .map((order) => {
+      const itemRows = order.items
+        .map(
+          (item) => `
+            <li>
+              <strong>${escapeHtml(item.productName)}</strong>
+              <span>${item.quantity} szt. · ${formatMoney(item.unitPrice)}</span>
+            </li>
+          `
+        )
+        .join("");
+
+      const confirmButton =
+        order.status === "pending"
+          ? `<button class="primary-button" type="button" data-order-action="confirm" data-order-id="${escapeHtml(order.id)}">Potwierdź</button>`
+          : "";
+
+      const cancelButton =
+        order.status === "pending"
+          ? `<button class="text-button danger" type="button" data-order-action="cancel" data-order-id="${escapeHtml(order.id)}">Anuluj</button>`
+          : "";
+
+      return `
+        <article class="order-card">
+          <div class="order-card-head">
+            <div>
+              <h3>${escapeHtml(order.id)}</h3>
+              <p>${escapeHtml(order.customerName)} · ${escapeHtml(order.customerContact)}</p>
+            </div>
+            <span class="order-status order-status-${escapeHtml(order.status)}">${escapeHtml(order.status)}</span>
+          </div>
+          ${order.customerNote ? `<p class="order-note">${escapeHtml(order.customerNote)}</p>` : ""}
+          <ul class="order-items-list">${itemRows}</ul>
+          <div class="order-card-foot">
+            <div>
+              <strong>${order.totalQuantity} szt.</strong>
+              <span>${formatMoney(order.totalAmount)}</span>
+            </div>
+            <div class="order-actions">
+              ${confirmButton}
+              ${cancelButton}
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
 }
 
 function renderList() {
@@ -84,17 +215,20 @@ function renderList() {
 
   if (products.length === 0) {
     adminList.innerHTML = `<p class="admin-empty">${lastLoadError ? "Nie udało się wczytać produktów." : "Brak produktów."}</p>`;
+    renderInventorySummary();
     return;
   }
 
   products.forEach((product, index) => {
+    const inventory = inventoryRecord(product.id);
     const item = document.createElement("article");
     item.className = "admin-item";
     item.innerHTML = `
       ${product.image ? `<img src="${escapeHtml(product.image)}" alt="">` : `<div class="admin-thumb">${escapeHtml(product.name[0] || "?")}</div>`}
       <div>
         <h3>${escapeHtml(product.name)}</h3>
-        <p>${escapeHtml(product.price)} zł · ${escapeHtml(String(product.stock || 30))} szt.</p>
+        <p>${escapeHtml(product.price)} zł · bazowy stan: ${escapeHtml(String(product.stock || 30))} szt.</p>
+        <p class="admin-stock-line">Zostało: ${currentStockFor(product)} szt. · Sprzedano: ${inventory ? inventory.confirmedSold : 0} szt.</p>
       </div>
       <div class="admin-row-actions">
         <button class="sort-button" type="button" data-move="up" data-id="${escapeHtml(product.id)}" ${index === 0 ? "disabled" : ""} title="Przesuń wyżej">↑</button>
@@ -104,6 +238,8 @@ function renderList() {
     `;
     adminList.appendChild(item);
   });
+
+  renderInventorySummary();
 }
 
 function clearForm() {
@@ -183,6 +319,78 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+async function loadAdminData() {
+  if (!isApiEnabled()) {
+    adminApiStatus.textContent = "Brak API magazynu. Potwierdzanie zamówień jest wyłączone.";
+    inventoryMap = new Map();
+    orders = [];
+    renderInventorySummary();
+    renderOrders();
+    return;
+  }
+
+  try {
+    const adminPassword = adminPasswordInput.value.trim() || getAdminPassword();
+    if (!adminPassword) {
+      adminApiStatus.textContent = SHOP_CONFIG.adminPasswordHint || "Podaj hasło administratora, aby wczytać zamówienia.";
+      orders = [];
+      inventoryMap = new Map();
+      renderInventorySummary();
+      renderOrders();
+      return;
+    }
+
+    setAdminPassword(adminPassword);
+    const syncPayload = await apiRequest({ action: "syncCatalog", products }, true);
+    if (!syncPayload.ok) {
+      throw new Error(syncPayload.error || "Nie udało się zsynchronizować katalogu.");
+    }
+
+    const data = await apiRequest({ action: "getAdminData" }, true);
+    inventoryMap = new Map(
+      (data.inventory || []).map((row) => [
+        row.productId,
+        {
+          currentStock: normalizeStock(row.currentStock),
+          confirmedSold: normalizeStock(row.confirmedSold),
+          updatedAt: String(row.updatedAt || "")
+        }
+      ])
+    );
+    orders = Array.isArray(data.orders) ? data.orders : [];
+    adminApiStatus.textContent = "API magazynu połączone. Zamówienia oczekują na Twoje potwierdzenie.";
+  } catch (error) {
+    adminApiStatus.textContent = error.message;
+    orders = [];
+    inventoryMap = new Map();
+  }
+
+  renderList();
+  renderOrders();
+}
+
+async function loadProducts() {
+  try {
+    const response = await fetch(`${PRODUCTS_URL}?v=${Date.now()}`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Products request failed: ${response.status}`);
+    }
+
+    products = normalizeProducts(await response.json());
+    lastLoadError = "";
+  } catch (error) {
+    products = [];
+    lastLoadError = error instanceof Error ? error.message : "Nie udało się wczytać products.json.";
+  }
+
+  clearForm();
+  renderList();
+  await loadAdminData();
+}
+
 adminList.addEventListener("click", (event) => {
   const moveButton = event.target.closest("[data-move]");
   if (moveButton) {
@@ -206,6 +414,31 @@ adminList.addEventListener("click", (event) => {
   const product = products.find((item) => item.id === editButton.dataset.editId);
   if (product) {
     editProduct(product);
+  }
+});
+
+orderList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-order-action]");
+  if (!button) {
+    return;
+  }
+
+  const action = button.dataset.orderAction;
+  const orderId = button.dataset.orderId;
+  button.disabled = true;
+
+  try {
+    if (action === "confirm") {
+      await apiRequest({ action: "confirmOrder", orderId }, true);
+    } else if (action === "cancel") {
+      await apiRequest({ action: "cancelOrder", orderId }, true);
+    }
+
+    await loadAdminData();
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    button.disabled = false;
   }
 });
 
@@ -258,6 +491,18 @@ deleteButton.addEventListener("click", () => {
 clearButton.addEventListener("click", clearForm);
 downloadButton.addEventListener("click", downloadProducts);
 reloadButton.addEventListener("click", loadProducts);
+savePasswordButton.addEventListener("click", async () => {
+  setAdminPassword(adminPasswordInput.value.trim());
+  await loadAdminData();
+});
+syncInventoryButton.addEventListener("click", async () => {
+  try {
+    await apiRequest({ action: "syncCatalog", products }, true);
+    await loadAdminData();
+  } catch (error) {
+    alert(error.message);
+  }
+});
 
 importInput.addEventListener("change", async () => {
   const [file] = importInput.files;
@@ -269,6 +514,7 @@ importInput.addEventListener("change", async () => {
     products = normalizeProducts(JSON.parse(await file.text()));
     clearForm();
     renderList();
+    await loadAdminData();
   } catch {
     alert("Nie udało się wczytać pliku JSON.");
   }
@@ -276,6 +522,5 @@ importInput.addEventListener("change", async () => {
   importInput.value = "";
 });
 
+adminPasswordInput.value = getAdminPassword();
 loadProducts();
-
-

@@ -1,11 +1,13 @@
-const CACHE_NAME = "product-catalog-v15";
+const CACHE_NAME = "product-catalog-v16";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./admin.html",
+  "./mat2rix3/index.html",
   "./styles.css",
   "./app.js",
   "./admin.js",
+  "./shop-config.js",
   "./manifest.webmanifest",
   "./icon.svg"
 ];

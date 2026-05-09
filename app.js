@@ -1,7 +1,10 @@
-﻿const MAX_PRODUCTS = 30;
+const MAX_PRODUCTS = 30;
 const PRODUCTS_URL = "products.json";
 const CART_STORAGE_KEY = "simple-shop-cart-v1";
+const ORDER_CONTACT_STORAGE_KEY = "simple-shop-order-contact-v1";
 const DEFAULT_STOCK_PER_PRODUCT = 30;
+const SHOP_CONFIG = window.SHOP_CONFIG || {};
+const ORDER_API_URL = String(SHOP_CONFIG.orderApiUrl || "").trim();
 
 const fallbackProducts = [
   {
@@ -9,21 +12,24 @@ const fallbackProducts = [
     name: "Kawa ziarnista",
     price: "39,99",
     description: "Aromatyczna kawa 1 kg do ekspresu.",
-    image: ""
+    image: "",
+    stock: 30
   },
   {
     id: "herbata-malinowa",
     name: "Herbata malinowa",
     price: "14,50",
     description: "Owocowa herbata w opakowaniu 100 g.",
-    image: ""
+    image: "",
+    stock: 30
   },
   {
     id: "miod-lipowy",
     name: "Miód lipowy",
     price: "28,00",
     description: "Słoik 400 g z lokalnej pasieki.",
-    image: ""
+    image: "",
+    stock: 30
   }
 ];
 
@@ -38,14 +44,23 @@ const cartSummary = document.querySelector("#cartSummary");
 const cartTotal = document.querySelector("#cartTotal");
 const clearCartButton = document.querySelector("#clearCartButton");
 const sendOrderButton = document.querySelector("#sendOrderButton");
+const orderStatus = document.querySelector("#orderStatus");
+const customerNameInput = document.querySelector("#customerName");
+const customerContactInput = document.querySelector("#customerContact");
+const customerNoteInput = document.querySelector("#customerNote");
 const imageDialog = document.querySelector("#imageDialog");
 const largeImage = document.querySelector("#largeImage");
 const largeImageCaption = document.querySelector("#largeImageCaption");
 const closeImageButton = document.querySelector("#closeImageButton");
 
 let products = [];
+let inventoryMap = new Map();
 let cart = loadCart();
 let deferredInstallPrompt = null;
+
+function isApiEnabled() {
+  return /^https?:\/\//i.test(ORDER_API_URL);
+}
 
 function loadCart() {
   try {
@@ -58,6 +73,31 @@ function loadCart() {
 
 function saveCart() {
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+}
+
+function loadOrderContact() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ORDER_CONTACT_STORAGE_KEY) || "{}");
+    if (!parsed || typeof parsed !== "object") {
+      return;
+    }
+    customerNameInput.value = String(parsed.name || "");
+    customerContactInput.value = String(parsed.contact || "");
+    customerNoteInput.value = String(parsed.note || "");
+  } catch {
+    // ignore
+  }
+}
+
+function saveOrderContact() {
+  localStorage.setItem(
+    ORDER_CONTACT_STORAGE_KEY,
+    JSON.stringify({
+      name: customerNameInput.value.trim(),
+      contact: customerContactInput.value.trim(),
+      note: customerNoteInput.value.trim()
+    })
+  );
 }
 
 function normalizeProducts(items) {
@@ -80,11 +120,31 @@ function normalizeProducts(items) {
 
 function normalizeStock(value) {
   const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_STOCK_PER_PRODUCT;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_STOCK_PER_PRODUCT;
+}
+
+function normalizeInventoryMap(rawInventory) {
+  inventoryMap = new Map();
+  if (!rawInventory || typeof rawInventory !== "object") {
+    return;
+  }
+
+  for (const [productId, record] of Object.entries(rawInventory)) {
+    inventoryMap.set(productId, {
+      currentStock: normalizeStock(record?.currentStock),
+      confirmedSold: normalizeStock(record?.confirmedSold),
+      updatedAt: String(record?.updatedAt || "")
+    });
+  }
+}
+
+function getInventoryRecord(productId) {
+  return inventoryMap.get(productId) || null;
 }
 
 function getProductStock(product) {
-  return normalizeStock(product?.stock);
+  const inventory = getInventoryRecord(product?.id);
+  return inventory ? inventory.currentStock : normalizeStock(product?.stock);
 }
 
 function syncCartToStock() {
@@ -117,6 +177,38 @@ function syncCartToStock() {
   }
 }
 
+async function apiRequest(payload) {
+  const response = await fetch(ORDER_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Błąd API: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+async function loadInventory() {
+  if (!isApiEnabled()) {
+    inventoryMap = new Map();
+    return;
+  }
+
+  try {
+    const payload = await apiRequest({ action: "getInventory" });
+    if (payload.ok) {
+      normalizeInventoryMap(payload.inventory);
+    }
+  } catch {
+    inventoryMap = new Map();
+  }
+}
+
 async function loadProducts() {
   try {
     const response = await fetch(`${PRODUCTS_URL}?v=${Date.now()}`, {
@@ -132,6 +224,7 @@ async function loadProducts() {
     products = fallbackProducts;
   }
 
+  await loadInventory();
   syncCartToStock();
   renderProducts();
   renderCart();
@@ -174,6 +267,7 @@ function renderProducts() {
   visibleProducts.forEach((product) => {
     const quantityInCart = cart[product.id] || 0;
     const stock = getProductStock(product);
+    const inventory = getInventoryRecord(product.id);
     const card = document.createElement("article");
     card.className = "product-card";
 
@@ -185,13 +279,18 @@ function renderProducts() {
       `
       : `<div class="product-photo"><span class="photo-fallback">${escapeHtml(productInitials(product.name))}</span></div>`;
 
+    const soldNote = inventory ? `<span class="stock-pill">Sprzedano: ${inventory.confirmedSold}</span>` : "";
+
     card.innerHTML = `
       ${photo}
       <div class="product-body">
         <h2 class="product-name">${escapeHtml(product.name)}</h2>
         <p class="product-description">${escapeHtml(product.description)}</p>
         ${product.description.length > 82 ? '<button class="description-toggle" type="button">Pokaż opis</button>' : ""}
-        <p class="stock-note">${stock} szt. dostępne</p>
+        <div class="stock-row">
+          <p class="stock-note">${stock} szt. dostępne</p>
+          ${soldNote}
+        </div>
         <div class="product-bottom">
           <span class="price">${escapeHtml(formatPrice(product.price))}</span>
           <button class="add-cart-button" type="button" data-cart-id="${escapeHtml(product.id)}" ${quantityInCart >= stock ? "disabled" : ""}>${quantityInCart > 0 ? `W koszyku: ${quantityInCart}` : "Dodaj"}</button>
@@ -261,6 +360,10 @@ function renderCart() {
   cartTotal.textContent = formatPrice(totals.total);
   clearCartButton.hidden = entries.length === 0;
   sendOrderButton.hidden = entries.length === 0;
+  orderStatus.textContent = isApiEnabled()
+    ? "Zamówienie trafi najpierw do listy oczekujących. Stan magazynowy zejdzie dopiero po potwierdzeniu."
+    : "Brak API zamówień. Sklep działa w trybie e-mail."
+  ;
 
   cartItems.innerHTML = "";
 
@@ -303,6 +406,9 @@ function sendOrderByEmail() {
     return;
   }
 
+  const customerName = customerNameInput.value.trim();
+  const customerContact = customerContactInput.value.trim();
+  const customerNote = customerNoteInput.value.trim();
   const totals = cartTotals();
   const lines = entries.map(({ product, quantity }, index) => {
     const price = parsePrice(product.price);
@@ -320,17 +426,80 @@ function sendOrderByEmail() {
     "",
     "Chcę złożyć zamówienie:",
     "",
+    customerName ? `Imię i nazwisko: ${customerName}` : "",
+    customerContact ? `Kontakt: ${customerContact}` : "",
+    customerNote ? `Uwagi: ${customerNote}` : "",
+    "",
     "----------------------------------------",
     ...lines,
     "----------------------------------------",
     "",
     `Suma sztuk: ${totals.quantity}`,
     `Suma zamówienia: ${formatPrice(totals.total)}`
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
   const subject = encodeURIComponent("Zamówienie ze sklepu");
   const encodedBody = encodeURIComponent(body);
   window.location.href = `mailto:${orderEmailAddress()}?subject=${subject}&body=${encodedBody}`;
+}
+
+async function sendOrderToApi() {
+  const entries = getCartEntries();
+  if (entries.length === 0) {
+    alert("Koszyk jest pusty.");
+    return;
+  }
+
+  const customerName = customerNameInput.value.trim();
+  const customerContact = customerContactInput.value.trim();
+  const customerNote = customerNoteInput.value.trim();
+
+  if (!customerName || !customerContact) {
+    alert("Podaj imię i nazwisko oraz kontakt do zamówienia.");
+    return;
+  }
+
+  sendOrderButton.disabled = true;
+
+  try {
+    const result = await apiRequest({
+      action: "createOrder",
+      customerName,
+      customerContact,
+      customerNote,
+      items: entries.map(({ product, quantity }) => ({
+        productId: product.id,
+        productName: product.name,
+        quantity,
+        unitPrice: parsePrice(product.price),
+        stockSnapshot: normalizeStock(product.stock)
+      }))
+    });
+
+    if (!result.ok) {
+      throw new Error(result.error || "Nie udało się zapisać zamówienia.");
+    }
+
+    saveOrderContact();
+    cart = {};
+    saveCart();
+    renderCart();
+    renderProducts();
+    alert(`Zamówienie zapisane jako oczekujące. Numer: ${result.orderId}`);
+  } catch (error) {
+    alert(`${error.message}\n\nPrzełączam na zapasową wysyłkę e-mail.`);
+    sendOrderByEmail();
+  } finally {
+    sendOrderButton.disabled = false;
+  }
+}
+
+function submitOrder() {
+  saveOrderContact();
+  if (isApiEnabled()) {
+    return sendOrderToApi();
+  }
+  sendOrderByEmail();
 }
 
 function escapeHtml(value) {
@@ -414,7 +583,10 @@ clearCartButton.addEventListener("click", () => {
   renderProducts();
 });
 
-sendOrderButton.addEventListener("click", sendOrderByEmail);
+sendOrderButton.addEventListener("click", submitOrder);
+customerNameInput.addEventListener("change", saveOrderContact);
+customerContactInput.addEventListener("change", saveOrderContact);
+customerNoteInput.addEventListener("change", saveOrderContact);
 
 imageDialog.addEventListener("click", (event) => {
   if (event.target === imageDialog) {
@@ -447,8 +619,5 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+loadOrderContact();
 loadProducts();
-
-
-
-

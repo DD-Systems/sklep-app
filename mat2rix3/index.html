@@ -65,14 +65,6 @@
         </form>
 
         <section class="admin-products">
-          <header class="admin-section-header">
-            <div>
-              <h2>Produkty</h2>
-              <p id="productCounter">0/30 produktow</p>
-            </div>
-            <button class="primary-button" id="downloadButton" type="button">Pobierz products.json</button>
-          </header>
-
           <section class="admin-api-box">
             <div>
               <h3>Magazyn i zamowienia</h3>
@@ -88,27 +80,43 @@
             </div>
           </section>
 
-          <div class="admin-toolbar">
-            <button class="text-button" id="reloadButton" type="button">Wczytaj z products.json</button>
-            <label class="file-import">
-              <span>Import JSON</span>
-              <input id="importInput" type="file" accept="application/json,.json">
-            </label>
+          <div class="admin-columns">
+            <section class="inventory-column">
+              <header class="admin-section-header">
+                <div>
+                  <h2>Stan magazynowy</h2>
+                  <p>Stan bazowy, sprzedano i aktualnie zostalo.</p>
+                </div>
+                <button class="primary-button" id="downloadInventoryButton" type="button">Pobierz CSV</button>
+              </header>
+              <section class="summary-grid" id="inventorySummary"></section>
+              <section class="inventory-section">
+                <div class="inventory-table-wrap" id="inventoryTableWrap"></div>
+              </section>
+            </section>
+
+            <section class="catalog-column">
+              <header class="admin-section-header">
+                <div>
+                  <h2>Edycja produktow</h2>
+                  <p id="productCounter">0/30 produktow</p>
+                </div>
+                <button class="primary-button" id="downloadButton" type="button">Pobierz products.json</button>
+              </header>
+
+              <div class="admin-toolbar">
+                <button class="text-button" id="reloadButton" type="button">Wczytaj z products.json</button>
+                <label class="file-import">
+                  <span>Import JSON</span>
+                  <input id="importInput" type="file" accept="application/json,.json">
+                </label>
+              </div>
+
+              <p class="admin-empty" id="loadStatus">Ładowanie produktów...</p>
+              <div class="admin-list" id="adminList"></div>
+            </section>
           </div>
 
-          <p class="admin-empty" id="loadStatus">Ładowanie produktów...</p>
-          <section class="summary-grid" id="inventorySummary"></section>
-          <section class="inventory-section">
-            <header class="admin-section-header">
-              <div>
-                <h2>Lista magazynowa</h2>
-                <p>Stan bazowy, sprzedano i aktualnie zostało.</p>
-              </div>
-              <button class="primary-button" id="downloadInventoryButton" type="button">Pobierz CSV</button>
-            </header>
-            <div class="inventory-table-wrap" id="inventoryTableWrap"></div>
-          </section>
-          <div class="admin-list" id="adminList"></div>
           <section class="orders-section">
             <header class="admin-section-header">
               <div>

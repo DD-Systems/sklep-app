@@ -567,6 +567,20 @@ textarea:focus {
   box-shadow: var(--shadow);
 }
 
+.admin-columns {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.05fr) minmax(320px, 0.95fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.inventory-column,
+.catalog-column {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
 .admin-api-box {
   display: grid;
   gap: 12px;
@@ -996,6 +1010,10 @@ textarea:focus {
 
 @media (max-width: 860px) {
   .admin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-columns {
     grid-template-columns: 1fr;
   }
 

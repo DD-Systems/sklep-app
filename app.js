@@ -279,8 +279,6 @@ function renderProducts() {
       `
       : `<div class="product-photo"><span class="photo-fallback">${escapeHtml(productInitials(product.name))}</span></div>`;
 
-    const soldNote = inventory ? `<span class="stock-pill">Sprzedano: ${inventory.confirmedSold}</span>` : "";
-
     card.innerHTML = `
       ${photo}
       <div class="product-body">
@@ -289,7 +287,6 @@ function renderProducts() {
         ${product.description.length > 82 ? '<button class="description-toggle" type="button">Pokaż opis</button>' : ""}
         <div class="stock-row">
           <p class="stock-note">${stock} szt. dostępne</p>
-          ${soldNote}
         </div>
         <div class="product-bottom">
           <span class="price">${escapeHtml(formatPrice(product.price))}</span>

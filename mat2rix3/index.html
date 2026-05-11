@@ -67,8 +67,8 @@
         <section class="admin-products">
           <section class="admin-api-box">
             <div>
-              <h3>Magazyn i zamowienia</h3>
-              <p id="adminApiStatus">Podlacz API, aby zamowienia oczekiwaly na potwierdzenie i dopiero wtedy zmniejszaly stan.</p>
+              <h3>Magazyn</h3>
+              <p id="adminApiStatus">Podlacz API, aby synchronizowac stany magazynowe.</p>
             </div>
             <div class="admin-api-actions">
               <label class="admin-password-field">
@@ -76,6 +76,7 @@
                 <input id="adminPassword" type="password" placeholder="Wpisz haslo">
               </label>
               <button class="text-button" id="savePasswordButton" type="button">Polacz</button>
+              <button class="text-button" id="adminApiTestButton" type="button">Sprawdz API</button>
               <button class="text-button" id="syncInventoryButton" type="button">Synchronizuj stany</button>
             </div>
           </section>
@@ -116,20 +117,10 @@
               <div class="admin-list" id="adminList"></div>
             </section>
           </div>
-
-          <section class="orders-section">
-            <header class="admin-section-header">
-              <div>
-                <h2>Zamowienia</h2>
-                <p>Stan schodzi dopiero po kliknieciu Potwierdz.</p>
-              </div>
-            </header>
-            <div class="order-list" id="orderList"></div>
-          </section>
         </section>
       </section>
     </main>
 
-    <script src="../admin.js?v=20260509-orders"></script>
+    <script src="../admin.js?v=20260511-no-orders"></script>
   </body>
 </html>

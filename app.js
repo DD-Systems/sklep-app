@@ -57,6 +57,7 @@ let products = [];
 let inventoryMap = new Map();
 let cart = loadCart();
 let deferredInstallPrompt = null;
+let checkoutNotice = "";
 
 function isApiEnabled() {
   return /^https?:\/\//i.test(ORDER_API_URL);
@@ -69,6 +70,10 @@ function loadCart() {
   } catch {
     return {};
   }
+}
+
+function clearCheckoutNotice() {
+  checkoutNotice = "";
 }
 
 function saveCart() {
@@ -203,7 +208,10 @@ async function loadInventory() {
     const payload = await apiRequest({ action: "getInventory" });
     if (payload.ok) {
       normalizeInventoryMap(payload.inventory);
+      return;
     }
+
+    inventoryMap = new Map();
   } catch {
     inventoryMap = new Map();
   }
@@ -321,6 +329,7 @@ function cartTotals() {
 }
 
 function setCartQuantity(productId, quantity) {
+  clearCheckoutNotice();
   const product = products.find((item) => item.id === productId);
   const stock = getProductStock(product);
   const safeQuantity = Math.max(0, Math.min(stock, quantity));
@@ -336,6 +345,7 @@ function setCartQuantity(productId, quantity) {
 }
 
 function addToCart(productId) {
+  clearCheckoutNotice();
   const currentQuantity = cart[productId] || 0;
   const product = products.find((item) => item.id === productId);
   const stock = getProductStock(product);
@@ -357,10 +367,11 @@ function renderCart() {
   cartTotal.textContent = formatPrice(totals.total);
   clearCartButton.hidden = entries.length === 0;
   sendOrderButton.hidden = entries.length === 0;
-  orderStatus.textContent = isApiEnabled()
-    ? "Zamówienie trafi najpierw do listy oczekujących. Stan magazynowy zejdzie dopiero po potwierdzeniu."
-    : "Brak API zamówień. Sklep działa w trybie e-mail."
-  ;
+  orderStatus.textContent =
+    checkoutNotice ||
+    (isApiEnabled()
+      ? "Zamówienie zostanie zapisane online."
+      : "Po kliknięciu otworzy się e-mail z gotowym zamówieniem do wysłania.");
 
   cartItems.innerHTML = "";
 
@@ -438,64 +449,13 @@ function sendOrderByEmail() {
   const subject = encodeURIComponent("Zamówienie ze sklepu");
   const encodedBody = encodeURIComponent(body);
   window.location.href = `mailto:${orderEmailAddress()}?subject=${subject}&body=${encodedBody}`;
-}
-
-async function sendOrderToApi() {
-  const entries = getCartEntries();
-  if (entries.length === 0) {
-    alert("Koszyk jest pusty.");
-    return;
-  }
-
-  const customerName = customerNameInput.value.trim();
-  const customerContact = customerContactInput.value.trim();
-  const customerNote = customerNoteInput.value.trim();
-
-  if (!customerName || !customerContact) {
-    alert("Podaj imię i nazwisko oraz kontakt do zamówienia.");
-    return;
-  }
-
-  sendOrderButton.disabled = true;
-
-  try {
-    const result = await apiRequest({
-      action: "createOrder",
-      customerName,
-      customerContact,
-      customerNote,
-      items: entries.map(({ product, quantity }) => ({
-        productId: product.id,
-        productName: product.name,
-        quantity,
-        unitPrice: parsePrice(product.price),
-        stockSnapshot: normalizeStock(product.stock)
-      }))
-    });
-
-    if (!result.ok) {
-      throw new Error(result.error || "Nie udało się zapisać zamówienia.");
-    }
-
-    saveOrderContact();
-    cart = {};
-    saveCart();
-    renderCart();
-    renderProducts();
-    alert(`Zamówienie zapisane jako oczekujące. Numer: ${result.orderId}`);
-  } catch (error) {
-    alert(`${error.message}\n\nPrzełączam na zapasową wysyłkę e-mail.`);
-    sendOrderByEmail();
-  } finally {
-    sendOrderButton.disabled = false;
-  }
+  checkoutNotice = "Wiadomość e-mail została przygotowana. Wyślij ją w aplikacji pocztowej.";
+  saveOrderContact();
+  renderCart();
 }
 
 function submitOrder() {
   saveOrderContact();
-  if (isApiEnabled()) {
-    return sendOrderToApi();
-  }
   sendOrderByEmail();
 }
 

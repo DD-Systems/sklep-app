@@ -1,12 +1,9 @@
-# Backend magazynu i zamówień
+# Backend magazynu
 
 Ten wariant jest pod `Cloudflare Worker + D1`.
 
 ## Co daje
 
-- zamówienia `pending`
-- ręczne `confirmOrder`
-- stan schodzi dopiero po potwierdzeniu
 - licznik `confirmedSold` i `currentStock`
 
 ## Szybki setup
@@ -16,16 +13,15 @@ Ten wariant jest pod `Cloudflare Worker + D1`.
 3. Ustaw w Workerze:
    - `DB` jako binding D1
    - `ADMIN_PASSWORD` jako sekret
+   - opcjonalnie `ORDER_NOTIFY_WEBHOOK_URL`, jeśli chcesz powiadomienie admina o nowym zamówieniu
+   - opcjonalnie `ORDER_NOTIFY_TOKEN`, jeśli webhook wymaga Bearer token
 4. Opublikuj Workera.
 5. W `shop-config.js` wpisz adres Workera w `orderApiUrl`.
 
 ## Frontend
 
-- sklep publiczny wysyła `createOrder`
 - panel admina używa:
   - `syncCatalog`
   - `getAdminData`
-  - `confirmOrder`
-  - `cancelOrder`
 
 Hasło admina wpisujesz w panelu admina. Nie jest trzymane na stałe w kodzie.

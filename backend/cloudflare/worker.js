@@ -196,7 +196,51 @@ async function createOrder(env, payload) {
     }
   }
 
-  return { ok: true, orderId };
+  const orderSummary = {
+    orderId,
+    customerName,
+    customerContact,
+    customerNote,
+    totalQuantity,
+    totalAmount,
+    createdAt: nowIso(),
+    items: sanitizedItems
+  };
+
+  const adminNotified = await notifyAdminAboutPendingOrder(env, orderSummary);
+  return { ok: true, orderId, adminNotified };
+}
+
+async function notifyAdminAboutPendingOrder(env, order) {
+  const url = String(env.ORDER_NOTIFY_WEBHOOK_URL || "").trim();
+  if (!url) {
+    return false;
+  }
+
+  const headers = {
+    "Content-Type": "application/json"
+  };
+  const token = String(env.ORDER_NOTIFY_TOKEN || "").trim();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      event: "order.pending",
+      shop: "sklep-app",
+      order
+    })
+  });
+
+  if (!response.ok) {
+    console.error("ORDER_NOTIFY_WEBHOOK_URL failed", response.status);
+    return false;
+  }
+
+  return true;
 }
 
 async function getAdminData(env) {

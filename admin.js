@@ -23,9 +23,9 @@ const productCounter = document.querySelector("#productCounter");
 const loadStatus = document.querySelector("#loadStatus");
 const adminPasswordInput = document.querySelector("#adminPassword");
 const savePasswordButton = document.querySelector("#savePasswordButton");
+const adminApiTestButton = document.querySelector("#adminApiTestButton");
 const syncInventoryButton = document.querySelector("#syncInventoryButton");
 const adminApiStatus = document.querySelector("#adminApiStatus");
-const orderList = document.querySelector("#orderList");
 const inventorySummary = document.querySelector("#inventorySummary");
 const inventoryTableWrap = document.querySelector("#inventoryTableWrap");
 const downloadInventoryButton = document.querySelector("#downloadInventoryButton");
@@ -34,7 +34,6 @@ let products = [];
 let selectedImage = "";
 let lastLoadError = "";
 let inventoryMap = new Map();
-let orders = [];
 
 function isApiEnabled() {
   return /^https?:\/\//i.test(ORDER_API_URL);
@@ -232,67 +231,6 @@ function downloadInventoryCsv() {
   URL.revokeObjectURL(url);
 }
 
-function renderOrders() {
-  if (!isApiEnabled()) {
-    orderList.innerHTML = '<p class="admin-empty">Podłącz API, aby widzieć zamówienia oczekujące i potwierdzać je ręcznie.</p>';
-    return;
-  }
-
-  if (!orders.length) {
-    orderList.innerHTML = '<p class="admin-empty">Brak zapisanych zamówień.</p>';
-    return;
-  }
-
-  orderList.innerHTML = orders
-    .map((order) => {
-      const itemRows = order.items
-        .map(
-          (item) => `
-            <li>
-              <strong>${escapeHtml(item.productName)}</strong>
-              <span>${item.quantity} szt. · ${formatMoney(item.unitPrice)}</span>
-            </li>
-          `
-        )
-        .join("");
-
-      const confirmButton =
-        order.status === "pending"
-          ? `<button class="primary-button" type="button" data-order-action="confirm" data-order-id="${escapeHtml(order.id)}">Potwierdź</button>`
-          : "";
-
-      const cancelButton =
-        order.status === "pending"
-          ? `<button class="text-button danger" type="button" data-order-action="cancel" data-order-id="${escapeHtml(order.id)}">Anuluj</button>`
-          : "";
-
-      return `
-        <article class="order-card">
-          <div class="order-card-head">
-            <div>
-              <h3>${escapeHtml(order.id)}</h3>
-              <p>${escapeHtml(order.customerName)} · ${escapeHtml(order.customerContact)}</p>
-            </div>
-            <span class="order-status order-status-${escapeHtml(order.status)}">${escapeHtml(order.status)}</span>
-          </div>
-          ${order.customerNote ? `<p class="order-note">${escapeHtml(order.customerNote)}</p>` : ""}
-          <ul class="order-items-list">${itemRows}</ul>
-          <div class="order-card-foot">
-            <div>
-              <strong>${order.totalQuantity} szt.</strong>
-              <span>${formatMoney(order.totalAmount)}</span>
-            </div>
-            <div class="order-actions">
-              ${confirmButton}
-              ${cancelButton}
-            </div>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
-}
-
 function renderList() {
   adminList.innerHTML = "";
   productCounter.textContent = `${products.length}/${MAX_PRODUCTS} produktów`;
@@ -409,22 +347,18 @@ function escapeHtml(value) {
 
 async function loadAdminData() {
   if (!isApiEnabled()) {
-    adminApiStatus.textContent = "Brak API magazynu. Potwierdzanie zamówień jest wyłączone.";
+    adminApiStatus.textContent = "Brak API magazynu.";
     inventoryMap = new Map();
-    orders = [];
     renderInventorySummary();
-    renderOrders();
     return;
   }
 
   try {
     const adminPassword = adminPasswordInput.value.trim() || getAdminPassword();
     if (!adminPassword) {
-      adminApiStatus.textContent = SHOP_CONFIG.adminPasswordHint || "Podaj hasło administratora, aby wczytać zamówienia.";
-      orders = [];
+      adminApiStatus.textContent = SHOP_CONFIG.adminPasswordHint || "Podaj hasło administratora, aby wczytać magazyn.";
       inventoryMap = new Map();
       renderInventorySummary();
-      renderOrders();
       return;
     }
 
@@ -445,16 +379,13 @@ async function loadAdminData() {
         }
       ])
     );
-    orders = Array.isArray(data.orders) ? data.orders : [];
-    adminApiStatus.textContent = "API magazynu połączone. Zamówienia oczekują na Twoje potwierdzenie.";
+    adminApiStatus.textContent = "API magazynu połączone.";
   } catch (error) {
     adminApiStatus.textContent = error.message;
-    orders = [];
     inventoryMap = new Map();
   }
 
   renderList();
-  renderOrders();
 }
 
 async function loadProducts() {
@@ -502,31 +433,6 @@ adminList.addEventListener("click", (event) => {
   const product = products.find((item) => item.id === editButton.dataset.editId);
   if (product) {
     editProduct(product);
-  }
-});
-
-orderList.addEventListener("click", async (event) => {
-  const button = event.target.closest("[data-order-action]");
-  if (!button) {
-    return;
-  }
-
-  const action = button.dataset.orderAction;
-  const orderId = button.dataset.orderId;
-  button.disabled = true;
-
-  try {
-    if (action === "confirm") {
-      await apiRequest({ action: "confirmOrder", orderId }, true);
-    } else if (action === "cancel") {
-      await apiRequest({ action: "cancelOrder", orderId }, true);
-    }
-
-    await loadAdminData();
-  } catch (error) {
-    alert(error.message);
-  } finally {
-    button.disabled = false;
   }
 });
 
@@ -582,6 +488,11 @@ reloadButton.addEventListener("click", loadProducts);
 savePasswordButton.addEventListener("click", async () => {
   setAdminPassword(adminPasswordInput.value.trim());
   await loadAdminData();
+});
+adminApiTestButton.addEventListener("click", async () => {
+  adminApiTestButton.disabled = true;
+  await loadAdminData();
+  adminApiTestButton.disabled = false;
 });
 syncInventoryButton.addEventListener("click", async () => {
   try {

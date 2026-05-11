@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "whoami": "wrangler whoami",
+    "login": "wrangler login"
+  },
+  "devDependencies": {
+    "wrangler": "^4.90.0"
+  }
+}

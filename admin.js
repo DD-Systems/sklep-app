@@ -27,6 +27,8 @@ const syncInventoryButton = document.querySelector("#syncInventoryButton");
 const adminApiStatus = document.querySelector("#adminApiStatus");
 const orderList = document.querySelector("#orderList");
 const inventorySummary = document.querySelector("#inventorySummary");
+const inventoryTableWrap = document.querySelector("#inventoryTableWrap");
+const downloadInventoryButton = document.querySelector("#downloadInventoryButton");
 
 let products = [];
 let selectedImage = "";
@@ -146,6 +148,90 @@ function renderInventorySummary() {
   inventorySummary.innerHTML = cards.join("") || '<p class="admin-empty">Brak produktów do podsumowania.</p>';
 }
 
+function inventoryRows() {
+  return products.map((product) => {
+    const inventory = inventoryRecord(product.id);
+    const baseStock = normalizeStock(product.stock);
+    const confirmedSold = inventory ? inventory.confirmedSold : 0;
+    const currentStock = inventory ? inventory.currentStock : baseStock;
+    return {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      baseStock,
+      confirmedSold,
+      currentStock
+    };
+  });
+}
+
+function renderInventoryTable() {
+  const rows = inventoryRows();
+
+  if (!rows.length) {
+    inventoryTableWrap.innerHTML = '<p class="admin-empty">Brak produktów na liście magazynowej.</p>';
+    return;
+  }
+
+  inventoryTableWrap.innerHTML = `
+    <table class="inventory-table">
+      <thead>
+        <tr>
+          <th>Produkt</th>
+          <th>Cena</th>
+          <th>Stan bazowy</th>
+          <th>Sprzedano</th>
+          <th>Zostało</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows
+          .map(
+            (row) => `
+              <tr>
+                <td>${escapeHtml(row.name)}</td>
+                <td>${escapeHtml(row.price)} zł</td>
+                <td>${row.baseStock}</td>
+                <td>${row.confirmedSold}</td>
+                <td><strong>${row.currentStock}</strong></td>
+              </tr>
+            `
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function downloadInventoryCsv() {
+  const rows = inventoryRows();
+  if (!rows.length) {
+    alert("Brak danych do eksportu.");
+    return;
+  }
+
+  const csv = [
+    ["Produkt", "Cena", "Stan bazowy", "Sprzedano", "Zostało"].join(";"),
+    ...rows.map((row) =>
+      [
+        `"${String(row.name).replaceAll('"', '""')}"`,
+        `"${String(row.price).replaceAll('"', '""')}"`,
+        row.baseStock,
+        row.confirmedSold,
+        row.currentStock
+      ].join(";")
+    )
+  ].join("\n");
+
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "lista-magazynowa.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function renderOrders() {
   if (!isApiEnabled()) {
     orderList.innerHTML = '<p class="admin-empty">Podłącz API, aby widzieć zamówienia oczekujące i potwierdzać je ręcznie.</p>';
@@ -216,6 +302,7 @@ function renderList() {
   if (products.length === 0) {
     adminList.innerHTML = `<p class="admin-empty">${lastLoadError ? "Nie udało się wczytać produktów." : "Brak produktów."}</p>`;
     renderInventorySummary();
+    renderInventoryTable();
     return;
   }
 
@@ -240,6 +327,7 @@ function renderList() {
   });
 
   renderInventorySummary();
+  renderInventoryTable();
 }
 
 function clearForm() {
@@ -503,6 +591,7 @@ syncInventoryButton.addEventListener("click", async () => {
     alert(error.message);
   }
 });
+downloadInventoryButton.addEventListener("click", downloadInventoryCsv);
 
 importInput.addEventListener("change", async () => {
   const [file] = importInput.files;

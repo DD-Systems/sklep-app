@@ -626,6 +626,44 @@ textarea:focus {
   font-size: 0.88rem;
 }
 
+.inventory-section {
+  display: grid;
+  gap: 12px;
+}
+
+.inventory-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.inventory-table th,
+.inventory-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.inventory-table th {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: #f7faf8;
+}
+
+.inventory-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 .orders-section {
   display: grid;
   gap: 12px;

@@ -569,7 +569,7 @@ textarea:focus {
 
 .admin-columns {
   display: grid;
-  grid-template-columns: minmax(320px, 1.05fr) minmax(320px, 0.95fr);
+  grid-template-columns: minmax(300px, 0.92fr) minmax(420px, 1.08fr);
   gap: 16px;
   align-items: start;
 }
@@ -579,6 +579,24 @@ textarea:focus {
   display: grid;
   gap: 14px;
   align-content: start;
+  min-width: 0;
+}
+
+.inventory-column .admin-section-header,
+.catalog-column .admin-section-header {
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-content: start;
+  gap: 10px;
+}
+
+.inventory-column .admin-section-header .primary-button,
+.catalog-column .admin-section-header .primary-button {
+  justify-self: start;
+}
+
+.catalog-column .admin-toolbar {
+  justify-content: flex-start;
 }
 
 .admin-api-box {
@@ -816,8 +834,8 @@ textarea:focus {
 
 .admin-item {
   display: grid;
-  grid-template-columns: 58px 1fr auto;
-  align-items: center;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: start;
   gap: 12px;
   padding: 10px;
   border: 1px solid var(--line);
@@ -863,6 +881,9 @@ textarea:focus {
   display: flex;
   align-items: center;
   gap: 6px;
+  grid-column: 2;
+  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 .sort-button {
@@ -1031,7 +1052,7 @@ textarea:focus {
 
   .admin-row-actions {
     grid-column: 1 / -1;
-    justify-content: stretch;
+    justify-content: flex-start;
   }
 
   .admin-row-actions .edit-button {

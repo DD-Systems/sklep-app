@@ -5,4 +5,4 @@ compatibility_date = "2026-05-09"
 [[d1_databases]]
 binding = "DB"
 database_name = "sklep-app-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "b53ae43c-3e38-49b2-94aa-8d1599305635"

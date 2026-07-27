@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rolka TikTok - Sklep App</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main>
+      <section class="stage-wrap">
+        <canvas id="reel" width="1080" height="1920" aria-label="Pionowa rolka TikTok"></canvas>
+      </section>
+      <aside class="panel">
+        <h1>Rolka TikTok</h1>
+        <p>Format 9:16, ok. 16 sekund. Produkty są pobierane z katalogu sklepu.</p>
+        <div class="actions">
+          <button id="playButton" type="button">Pauza</button>
+          <button id="recordButton" type="button">Nagraj .webm</button>
+        </div>
+        <p id="status">Ładowanie produktów...</p>
+        <a href="../index.html">Podgląd sklepiku</a>
+      </aside>
+    </main>
+    <script src="reel.js"></script>
+  </body>
+</html>

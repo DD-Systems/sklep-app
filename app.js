@@ -404,7 +404,16 @@ function renderCart() {
 }
 
 function orderEmailAddress() {
-  return ["sklepapp2026", "gmail.com"].join("@");
+  return String(SHOP_CONFIG.orderEmail || ["sklepapp2026", "gmail.com"].join("@")).trim();
+}
+
+function orderSource() {
+  return String(SHOP_CONFIG.orderSource || "Sklep oryginalny").trim();
+}
+
+function partnerShare() {
+  const percent = Number(SHOP_CONFIG.partnerSharePercent || 0);
+  return Number.isFinite(percent) && percent > 0 ? percent : 0;
 }
 
 function sendOrderByEmail() {
@@ -418,6 +427,9 @@ function sendOrderByEmail() {
   const customerContact = customerContactInput.value.trim();
   const customerNote = customerNoteInput.value.trim();
   const totals = cartTotals();
+  const source = orderSource();
+  const sharePercent = partnerShare();
+  const partnerName = String(SHOP_CONFIG.partnerName || source).trim();
   const lines = entries.map(({ product, quantity }, index) => {
     const price = parsePrice(product.price);
     const lineTotal = Number.isNaN(price) ? 0 : price * quantity;
@@ -434,6 +446,7 @@ function sendOrderByEmail() {
     "",
     "Chcę złożyć zamówienie:",
     "",
+    `Źródło zamówienia: ${source}`,
     customerName ? `Imię i nazwisko: ${customerName}` : "",
     customerContact ? `Kontakt: ${customerContact}` : "",
     customerNote ? `Uwagi: ${customerNote}` : "",
@@ -443,12 +456,15 @@ function sendOrderByEmail() {
     "----------------------------------------",
     "",
     `Suma sztuk: ${totals.quantity}`,
-    `Suma zamówienia: ${formatPrice(totals.total)}`
+    `Suma zamówienia: ${formatPrice(totals.total)}`,
+    sharePercent ? `Udział ${partnerName} (${sharePercent}%): ${formatPrice(totals.total * sharePercent / 100)}` : ""
   ].filter(Boolean).join("\n");
 
-  const subject = encodeURIComponent("Zamówienie ze sklepu");
+  const subject = encodeURIComponent(`[${source.toUpperCase()}${sharePercent ? ` ${sharePercent}%` : ""}] Zamówienie ze sklepu`);
   const encodedBody = encodeURIComponent(body);
-  window.location.href = `mailto:${orderEmailAddress()}?subject=${subject}&body=${encodedBody}`;
+  const partnerEmail = String(SHOP_CONFIG.partnerEmail || "").trim();
+  const cc = partnerEmail ? `cc=${encodeURIComponent(partnerEmail)}&` : "";
+  window.location.href = `mailto:${orderEmailAddress()}?${cc}subject=${subject}&body=${encodedBody}`;
   checkoutNotice = "Wiadomość e-mail została przygotowana. Wyślij ją w aplikacji pocztowej.";
   saveOrderContact();
   renderCart();

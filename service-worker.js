@@ -1,4 +1,4 @@
-const CACHE_NAME = "product-catalog-v25";
+const CACHE_NAME = "product-catalog-v26-order-source";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",

@@ -1,4 +1,4 @@
-const CACHE_NAME = "product-catalog-v26-order-source";
+const CACHE_NAME = "product-catalog-v27-admin-publish";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const FILES_TO_CACHE = [
   "./styles.css",
   "./app.js",
   "./admin.js",
+  "./catalog-publisher.js",
   "./shop-config.js",
   "./manifest.webmanifest",
   "./icon.svg"
@@ -32,8 +33,10 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
+  if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
 
-  if (url.pathname.endsWith("/products.json")) {
+  const isAdminResource = /\/(?:admin\.html|mat2rix3\/(?:index\.html)?|admin\.js|catalog-publisher\.js)$/.test(url.pathname);
+  if (url.pathname.endsWith("/products.json") || isAdminResource) {
     event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
     return;
   }

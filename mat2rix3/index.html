@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#145c63">
     <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
     <title>Panel admina - katalog produktow</title>
-    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../styles.css?v=20261027-publish">
     <script src="../shop-config.js"></script>
   </head>
   <body>
@@ -16,15 +16,37 @@
           <p class="eyebrow">Panel admina</p>
           <h1>Katalog</h1>
         </div>
-        <a class="admin-link" href="../index.html">Podglad</a>
+        <a class="admin-link" href="../index.html">Podgląd sklepu</a>
       </header>
+
+      <section class="publish-toolbar" aria-label="Publikacja katalogu">
+        <div class="publish-actions">
+          <button class="primary-button" id="publishButton" type="button" disabled>Opublikuj zmiany</button>
+          <p id="publishStatus" role="status" aria-live="polite">Wczytywanie katalogu...</p>
+        </div>
+        <details class="github-settings" id="githubSettings">
+          <summary id="githubConnectionStatus">Połącz GitHub</summary>
+          <form id="githubConnectionForm" class="github-connection-form">
+            <label>
+              <span>Klucz dostępu GitHub</span>
+              <input id="githubTokenInput" type="password" autocomplete="off" spellcheck="false" required>
+            </label>
+            <p>Dostęp tylko do <strong>sklep-app</strong>, uprawnienie <strong>Contents: Read and write</strong>. Klucz jest pamiętany do zamknięcia karty.</p>
+            <div class="github-connection-actions">
+              <button class="primary-button" type="submit">Połącz</button>
+              <a href="https://github.com/settings/personal-access-tokens/new?name=Sklep%20App&amp;target_name=DD-Systems&amp;contents=write&amp;expires_in=90" target="_blank" rel="noopener noreferrer">Utwórz klucz na GitHubie</a>
+            </div>
+          </form>
+          <button class="text-button" id="disconnectGithubButton" type="button" hidden>Odłącz GitHub</button>
+        </details>
+      </section>
 
       <section class="admin-layout">
         <form class="admin-form" id="adminForm">
           <header class="admin-section-header">
             <div>
               <h2 id="formTitle">Dodaj produkt</h2>
-              <p>Maksymalnie 30 produktow. Zdjecia zostana zapisane w pliku JSON.</p>
+              <p>Maksymalnie 30 produktów.</p>
             </div>
           </header>
 
@@ -47,7 +69,7 @@
 
           <label>
             <span>Stan magazynowy</span>
-            <input id="stockInput" type="number" min="1" max="30" value="30" required>
+            <input id="stockInput" type="number" min="0" max="30" value="30" required>
           </label>
 
           <label>
@@ -102,11 +124,11 @@
                   <h2>Edycja produktow</h2>
                   <p id="productCounter">0/30 produktow</p>
                 </div>
-                <button class="primary-button" id="downloadButton" type="button">Pobierz products.json</button>
+                <button class="text-button" id="downloadButton" type="button">Pobierz kopię JSON</button>
               </header>
 
               <div class="admin-toolbar">
-                <button class="text-button" id="reloadButton" type="button">Wczytaj z products.json</button>
+                <button class="text-button" id="reloadButton" type="button">Wczytaj opublikowane</button>
                 <label class="file-import">
                   <span>Import JSON</span>
                   <input id="importInput" type="file" accept="application/json,.json">
@@ -121,6 +143,7 @@
       </section>
     </main>
 
-    <script src="../admin.js?v=20260511-no-orders"></script>
+    <script src="../catalog-publisher.js?v=20261027-publish"></script>
+    <script src="../admin.js?v=20261027-publish"></script>
   </body>
 </html>

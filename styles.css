@@ -556,9 +556,72 @@ textarea:focus {
   align-items: start;
 }
 
+.publish-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  margin-bottom: 18px;
+  border-block: 1px solid var(--line);
+}
+
+.publish-actions {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.publish-actions p,
+.github-connection-form p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.publish-actions .error-text {
+  color: var(--danger);
+}
+
+.publish-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.github-settings {
+  flex: 0 1 400px;
+  min-width: 0;
+}
+
+.github-settings summary {
+  padding: 12px 0;
+  cursor: pointer;
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.github-connection-form {
+  display: grid;
+  gap: 12px;
+}
+
+.github-connection-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.github-connection-actions a {
+  color: var(--brand);
+}
+
 .admin-form,
 .admin-products {
   display: grid;
+  min-width: 0;
   gap: 14px;
   padding: 16px;
   border: 1px solid var(--line);
@@ -1031,11 +1094,15 @@ textarea:focus {
 
 @media (max-width: 860px) {
   .admin-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .admin-columns {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-api-actions {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .admin-section-header,

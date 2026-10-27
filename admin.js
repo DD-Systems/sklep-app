@@ -3,6 +3,8 @@ const PRODUCTS_URL = new URL("../products.json", window.location.href).href;
 const SHOP_CONFIG = window.SHOP_CONFIG || {};
 const ORDER_API_URL = String(SHOP_CONFIG.orderApiUrl || "").trim();
 const ADMIN_PASSWORD_STORAGE_KEY = "simple-shop-admin-password";
+const GITHUB_TOKEN_STORAGE_KEY = "simple-shop-github-token";
+const catalogPublisher = ShopCatalogPublisher.create();
 
 const form = document.querySelector("#adminForm");
 const formTitle = document.querySelector("#formTitle");
@@ -29,11 +31,101 @@ const adminApiStatus = document.querySelector("#adminApiStatus");
 const inventorySummary = document.querySelector("#inventorySummary");
 const inventoryTableWrap = document.querySelector("#inventoryTableWrap");
 const downloadInventoryButton = document.querySelector("#downloadInventoryButton");
+const publishButton = document.querySelector("#publishButton");
+const publishStatus = document.querySelector("#publishStatus");
+const githubSettings = document.querySelector("#githubSettings");
+const githubConnectionForm = document.querySelector("#githubConnectionForm");
+const githubTokenInput = document.querySelector("#githubTokenInput");
+const disconnectGithubButton = document.querySelector("#disconnectGithubButton");
+const githubConnectionStatus = document.querySelector("#githubConnectionStatus");
 
 let products = [];
 let selectedImage = "";
 let lastLoadError = "";
 let inventoryMap = new Map();
+let catalogSha = "";
+let hasUnpublishedChanges = false;
+let isBusy = false;
+let githubToken = "";
+let draftQueue = Promise.resolve();
+try { githubToken = sessionStorage.getItem(GITHUB_TOKEN_STORAGE_KEY) || ""; } catch {}
+
+function setPublishStatus(message, isError = false) {
+  publishStatus.textContent = message;
+  publishStatus.classList.toggle("error-text", isError);
+}
+
+function updatePublishControls() {
+  publishButton.disabled = isBusy || !hasUnpublishedChanges || !catalogSha;
+  publishButton.textContent = isBusy ? "Proszę czekać..." : "Opublikuj zmiany";
+  githubConnectionStatus.textContent = githubToken ? "GitHub połączony" : "Połącz GitHub";
+  disconnectGithubButton.hidden = !githubToken;
+  form.inert = isBusy;
+  adminList.inert = isBusy;
+  githubConnectionForm.inert = isBusy;
+  disconnectGithubButton.disabled = isBusy;
+  reloadButton.disabled = isBusy;
+  importInput.disabled = isBusy;
+}
+
+function setBusy(value) {
+  isBusy = value;
+  updatePublishControls();
+}
+
+function draftRequest(mode, value) {
+  return new Promise((resolve, reject) => {
+    const opening = indexedDB.open("simple-shop-admin", 1);
+    opening.onupgradeneeded = () => opening.result.createObjectStore("drafts");
+    opening.onerror = () => reject(opening.error);
+    opening.onblocked = () => reject(new Error("Magazyn wersji roboczych jest zajęty."));
+    opening.onsuccess = () => {
+      const db = opening.result;
+      const transaction = db.transaction("drafts", mode);
+      const store = transaction.objectStore("drafts");
+      const request = value === undefined ? store.get("catalog") : value === null
+        ? store.delete("catalog") : store.put(value, "catalog");
+      transaction.oncomplete = () => { db.close(); resolve(request.result); };
+      transaction.onabort = transaction.onerror = () => { db.close(); reject(transaction.error); };
+    };
+  });
+}
+
+function catalogChanged() {
+  hasUnpublishedChanges = true;
+  setPublishStatus("Masz nieopublikowane zmiany.");
+  updatePublishControls();
+  const snapshot = { products: structuredClone(products), sha: catalogSha };
+  draftQueue = draftQueue.catch(() => {}).then(() => draftRequest("readwrite", snapshot)).catch(() => {
+    setPublishStatus("Zmiany są w tej karcie. Przeglądarka nie pozwoliła zapisać kopii roboczej.", true);
+  });
+}
+
+async function publishCatalog() {
+  if (isBusy || !hasUnpublishedChanges) return;
+  if (!githubToken) {
+    githubSettings.open = true;
+    githubTokenInput.focus();
+    setPublishStatus("Połącz GitHub, aby opublikować przygotowane zmiany.");
+    return;
+  }
+  if (!products.length && !confirm("Opublikować pusty katalog i usunąć wszystkie produkty ze sklepu?")) return;
+  setBusy(true);
+  setPublishStatus("Wysyłanie produktów i zdjęć...");
+  try {
+    const result = await catalogPublisher.publish(products, catalogSha, githubToken);
+    catalogSha = result.sha;
+    hasUnpublishedChanges = false;
+    await draftQueue;
+    try { await draftRequest("readwrite", null); } catch {}
+    setPublishStatus(result.unchanged ? "Katalog na GitHubie jest już aktualny."
+      : "Zapisano na GitHubie. Aktualizacja sklepu trwa zwykle 1–2 minuty.");
+  } catch (error) {
+    setPublishStatus(error.message, true);
+  } finally {
+    setBusy(false);
+  }
+}
 
 function isApiEnabled() {
   return /^https?:\/\//i.test(ORDER_API_URL);
@@ -234,7 +326,8 @@ function downloadInventoryCsv() {
 function renderList() {
   adminList.innerHTML = "";
   productCounter.textContent = `${products.length}/${MAX_PRODUCTS} produktów`;
-  loadStatus.textContent = lastLoadError || `Źródło danych: ${PRODUCTS_URL}`;
+  loadStatus.textContent = lastLoadError;
+  loadStatus.hidden = !lastLoadError;
   loadStatus.classList.toggle("error-text", Boolean(lastLoadError));
 
   if (products.length === 0) {
@@ -252,7 +345,7 @@ function renderList() {
       ${product.image ? `<img src="${escapeHtml(product.image)}" alt="">` : `<div class="admin-thumb">${escapeHtml(product.name[0] || "?")}</div>`}
       <div>
         <h3>${escapeHtml(product.name)}</h3>
-        <p>${escapeHtml(product.price)} zł · bazowy stan: ${escapeHtml(String(product.stock || 30))} szt.</p>
+        <p>${escapeHtml(product.price)} zł · bazowy stan: ${escapeHtml(String(product.stock ?? 30))} szt.</p>
         <p class="admin-stock-line">Zostało: ${currentStockFor(product)} szt. · Sprzedano: ${inventory ? inventory.confirmedSold : 0} szt.</p>
       </div>
       <div class="admin-row-actions">
@@ -286,7 +379,7 @@ function editProduct(product) {
   nameInput.value = product.name;
   priceInput.value = product.price;
   descriptionInput.value = product.description;
-  stockInput.value = String(product.stock || 30);
+  stockInput.value = String(product.stock ?? 30);
   selectedImage = product.image;
   imageInput.value = "";
   formTitle.textContent = "Edytuj produkt";
@@ -297,7 +390,7 @@ function editProduct(product) {
 
 function renderPreview() {
   imagePreview.innerHTML = selectedImage
-    ? `<img src="${selectedImage}" alt="">`
+    ? `<img src="${escapeHtml(selectedImage)}" alt="">`
     : "<span>Brak zdjęcia</span>";
 }
 
@@ -363,11 +456,6 @@ async function loadAdminData() {
     }
 
     setAdminPassword(adminPassword);
-    const syncPayload = await apiRequest({ action: "syncCatalog", products }, true);
-    if (!syncPayload.ok) {
-      throw new Error(syncPayload.error || "Nie udało się zsynchronizować katalogu.");
-    }
-
     const data = await apiRequest({ action: "getAdminData" }, true);
     inventoryMap = new Map(
       (data.inventory || []).map((row) => [
@@ -388,21 +476,53 @@ async function loadAdminData() {
   renderList();
 }
 
-async function loadProducts() {
+async function loadProducts({ restoreDraft = false } = {}) {
+  if (isBusy) return;
+  if (hasUnpublishedChanges && !confirm("Odrzucić nieopublikowane zmiany i wczytać aktualny katalog?")) return;
+  setBusy(true);
   try {
-    const response = await fetch(`${PRODUCTS_URL}?v=${Date.now()}`, {
-      cache: "no-store"
-    });
-
-    if (!response.ok) {
-      throw new Error(`Products request failed: ${response.status}`);
+    let catalog;
+    try {
+      catalog = await catalogPublisher.readCatalog(githubToken);
+    } catch {
+      const response = await fetch(`${PRODUCTS_URL}?v=${Date.now()}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Nie udało się wczytać katalogu.");
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      const items = JSON.parse(new TextDecoder().decode(bytes));
+      ShopCatalogPublisher.validate(items);
+      catalog = { products: items, sha: await ShopCatalogPublisher.blobSha(bytes) };
     }
-
-    products = normalizeProducts(await response.json());
+    products = normalizeProducts(catalog.products);
+    catalogSha = catalog.sha;
+    hasUnpublishedChanges = false;
     lastLoadError = "";
+    if (restoreDraft) {
+      const draft = await draftRequest("readonly").catch(() => null);
+      if (draft && Array.isArray(draft.products) && draft.sha) {
+        products = normalizeProducts(draft.products);
+        catalogSha = draft.sha;
+        hasUnpublishedChanges = true;
+      }
+    } else {
+      await draftQueue;
+      await draftRequest("readwrite", null).catch(() => {});
+    }
+    setPublishStatus(hasUnpublishedChanges ? "Przywrócono nieopublikowaną wersję roboczą."
+      : "Katalog jest aktualny.");
   } catch (error) {
-    products = [];
-    lastLoadError = error instanceof Error ? error.message : "Nie udało się wczytać products.json.";
+    lastLoadError = "Nie udało się wczytać katalogu. Sprawdź połączenie i spróbuj ponownie.";
+    if (restoreDraft) {
+      const draft = await draftRequest("readonly").catch(() => null);
+      if (draft && Array.isArray(draft.products) && draft.sha) {
+        products = normalizeProducts(draft.products);
+        catalogSha = draft.sha;
+        hasUnpublishedChanges = true;
+        lastLoadError = "Brak połączenia. Przywrócono nieopublikowaną wersję roboczą.";
+      }
+    }
+    setPublishStatus(lastLoadError, true);
+  } finally {
+    setBusy(false);
   }
 
   clearForm();
@@ -419,6 +539,7 @@ adminList.addEventListener("click", (event) => {
 
     if (index >= 0 && nextIndex >= 0 && nextIndex < products.length) {
       [products[index], products[nextIndex]] = [products[nextIndex], products[index]];
+      catalogChanged();
       renderList();
     }
 
@@ -438,6 +559,7 @@ adminList.addEventListener("click", (event) => {
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (isBusy) return;
 
   const currentId = productId.value || slugify(nameInput.value);
   const existingIndex = products.findIndex((product) => product.id === currentId);
@@ -455,6 +577,12 @@ form.addEventListener("submit", (event) => {
     stock: normalizeStock(stockInput.value),
     image: selectedImage
   };
+  try {
+    ShopCatalogPublisher.validate([product]);
+  } catch (error) {
+    setPublishStatus(error.message, true);
+    return;
+  }
 
   if (existingIndex >= 0) {
     products[existingIndex] = product;
@@ -462,6 +590,7 @@ form.addEventListener("submit", (event) => {
     products.unshift(product);
   }
 
+  catalogChanged();
   clearForm();
   renderList();
 });
@@ -472,19 +601,66 @@ imageInput.addEventListener("change", async () => {
     return;
   }
 
-  selectedImage = await resizeImage(file);
-  renderPreview();
+  setBusy(true);
+  try {
+    selectedImage = await resizeImage(file);
+    renderPreview();
+  } catch {
+    setPublishStatus("Nie udało się odczytać zdjęcia. Wybierz inny plik.", true);
+  } finally {
+    setBusy(false);
+  }
 });
 
 deleteButton.addEventListener("click", () => {
   products = products.filter((product) => product.id !== productId.value);
+  catalogChanged();
   clearForm();
   renderList();
 });
 
 clearButton.addEventListener("click", clearForm);
 downloadButton.addEventListener("click", downloadProducts);
-reloadButton.addEventListener("click", loadProducts);
+reloadButton.addEventListener("click", () => loadProducts());
+publishButton.addEventListener("click", publishCatalog);
+githubConnectionForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (isBusy) return;
+  const token = githubTokenInput.value.trim();
+  setBusy(true);
+  setPublishStatus("Sprawdzanie połączenia z GitHubem...");
+  try {
+    const catalog = await catalogPublisher.connect(token);
+    githubToken = token;
+    try { sessionStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, token); } catch {}
+    githubTokenInput.value = "";
+    githubSettings.open = false;
+    if (!hasUnpublishedChanges) {
+      products = normalizeProducts(catalog.products);
+      catalogSha = catalog.sha;
+      renderList();
+    }
+    setPublishStatus(hasUnpublishedChanges ? "Połączono. Możesz opublikować przygotowane zmiany."
+      : "GitHub połączony. Katalog jest aktualny.");
+  } catch (error) {
+    setPublishStatus(error.message, true);
+  } finally {
+    setBusy(false);
+  }
+});
+disconnectGithubButton.addEventListener("click", () => {
+  githubToken = "";
+  githubTokenInput.value = "";
+  try { sessionStorage.removeItem(GITHUB_TOKEN_STORAGE_KEY); } catch {}
+  updatePublishControls();
+  setPublishStatus("Odłączono GitHub. Wersja robocza została zachowana.");
+});
+window.addEventListener("beforeunload", (event) => {
+  if (hasUnpublishedChanges) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+});
 savePasswordButton.addEventListener("click", async () => {
   setAdminPassword(adminPasswordInput.value.trim());
   await loadAdminData();
@@ -511,7 +687,10 @@ importInput.addEventListener("change", async () => {
   }
 
   try {
-    products = normalizeProducts(JSON.parse(await file.text()));
+    const importedProducts = JSON.parse(await file.text());
+    ShopCatalogPublisher.validate(importedProducts);
+    products = normalizeProducts(importedProducts);
+    catalogChanged();
     clearForm();
     renderList();
     await loadAdminData();
@@ -523,4 +702,7 @@ importInput.addEventListener("change", async () => {
 });
 
 adminPasswordInput.value = getAdminPassword();
-loadProducts();
+loadProducts({ restoreDraft: true });
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register(new URL("../service-worker.js", window.location.href)).catch(() => {});
+}
